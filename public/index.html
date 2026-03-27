@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisador de Maturidade de Inovacao</title>
+    <style>
+        :root {
+            --primary: #1e3a5f;
+            --secondary: #2d5a87;
+            --accent: #f4a261;
+            --success: #2a9d8f;
+            --warning: #e9c46a;
+            --danger: #e76f51;
+            --light: #f8f9fa;
+            --dark: #1d3557;
+            --gray: #6c757d;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); min-height: 100vh; }
+        .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+        .hero { text-align: center; color: white; margin-bottom: 40px; }
+        .hero h1 { font-size: 2.5rem; margin-bottom: 15px; }
+        .hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; margin: 0 auto; }
+        .card { background: white; border-radius: 16px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .form-group { margin-bottom: 25px; }
+        .form-group label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
+        .input-wrapper { position: relative; }
+        .input-wrapper input { width: 100%; padding: 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; }
+        .input-wrapper input:focus { outline: none; border-color: var(--accent); }
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, var(--accent) 0%, #e8914a 100%); color: white; }
+        .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+        .features { margin-top: 30px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .feature { text-align: center; padding: 15px; background: var(--light); border-radius: 10px; }
+        .feature-icon { font-size: 1.5rem; margin-bottom: 8px; }
+        .feature-text { font-size: 0.85rem; color: var(--gray); }
+        .status { margin-top: 25px; padding: 20px; border-radius: 10px; display: none; }
+        .status.loading { display: block; background: rgba(42, 157, 143, 0.1); border: 1px solid var(--success); }
+        .status.error { display: block; background: rgba(231, 111, 81, 0.1); border: 1px solid var(--danger); color: var(--danger); }
+        .status.success { display: block; background: rgba(42, 157, 143, 0.1); border: 1px solid var(--success); color: var(--success); }
+        .status h3 { margin-bottom: 10px; font-size: 1.1rem; }
+        .status p { color: var(--gray); font-size: 0.95rem; }
+        .spinner-steps { margin-top: 15px; }
+        .step-indicator { display: flex; align-items: center; gap: 10px; padding: 8px 0; color: var(--gray); font-size: 0.9rem; }
+        .step-indicator-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
+        .step-indicator.pending .step-indicator-icon { background: #e0e0e0; }
+        .step-indicator.active .step-indicator-icon { background: var(--accent); color: white; }
+        .step-indicator.done .step-indicator-icon { background: var(--success); color: white; }
+        .result-actions { margin-top: 20px; display: flex; gap: 10px; }
+        .btn-secondary { flex: 1; padding: 12px; background: var(--light); color: var(--primary); border: 2px solid var(--primary); border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none; text-align: center; }
+        .btn-secondary:hover { background: var(--primary); color: white; }
+        .score-preview { background: white; border-radius: 10px; padding: 15px; margin-top: 15px; }
+        .score-preview h4 { color: var(--primary); margin-bottom: 10px; }
+        .score-bars { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .score-bar { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
+        .score-bar-label { min-width: 90px; color: var(--gray); }
+        .score-bar-fill { flex: 1; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; }
+        .score-bar-value { min-width: 30px; text-align: right; font-weight: 600; color: var(--primary); }
+        .how-it-works { margin-top: 40px; color: rgba(255,255,255,0.8); }
+        .how-it-works h2 { font-size: 1.3rem; margin-bottom: 15px; text-align: center; }
+        .steps-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .step-item { text-align: center; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .step-number { width: 35px; height: 35px; background: var(--accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin: 0 auto 10px; }
+        .step-title { font-weight: 600; margin-bottom: 5px; }
+        .step-desc { font-size: 0.85rem; opacity: 0.8; }
+        .footer { text-align: center; margin-top: 40px; color: rgba(255,255,255,0.6); font-size: 0.85rem; }
+        .server-status { margin-top: 15px; padding: 10px; background: var(--light); border-radius: 8px; font-size: 0.85rem; text-align: center; }
+        .server-status.connected { color: var(--success); }
+        .server-status.disconnected { color: var(--danger); }
+        @media (max-width: 600px) { .hero h1 { font-size: 1.8rem; } .features, .steps-list { grid-template-columns: 1fr; } .card { padding: 25px; } .score-bars { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>Analise de Maturidade de Inovacao</h1>
+            <p>Descubra o nivel de maturidade digital e inovacao de qualquer empresa em segundos.</p>
+        </div>
+
+        <div class="card">
+            <form id="analyzeForm">
+                <div class="form-group">
+                    <label for="url">URL do Site da Empresa</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="url" name="url" placeholder="www.exemplo.com.br" required autocomplete="url">
+                    </div>
+                </div>
+                <button type="submit" class="btn" id="submitBtn">Analisar Site</button>
+            </form>
+
+            <div class="server-status connected" id="serverStatus">
+                Servidor conectado - pronto para analisar
+            </div>
+
+            <div class="features">
+                <div class="feature"><div class="feature-icon">📊</div><div class="feature-text">5 Dimensoes</div></div>
+                <div class="feature"><div class="feature-icon">⚡</div><div class="feature-text">Rapido</div></div>
+                <div class="feature"><div class="feature-icon">📄</div><div class="feature-text">Relatorio HTML</div></div>
+            </div>
+
+            <div class="status loading" id="statusLoading">
+                <h3>🔄 Analisando Site...</h3>
+                <p id="statusMessage">Aguarde...</p>
+                <div class="spinner-steps">
+                    <div class="step-indicator pending" id="step1"><span class="step-indicator-icon">1</span><span>Buscando site</span></div>
+                    <div class="step-indicator pending" id="step2"><span class="step-indicator-icon">2</span><span>Extraindo dados</span></div>
+                    <div class="step-indicator pending" id="step3"><span class="step-indicator-icon">3</span><span>Calculando scores</span></div>
+                    <div class="step-indicator pending" id="step4"><span class="step-indicator-icon">4</span><span>Gerando relatorio</span></div>
+                </div>
+            </div>
+
+            <div class="status error" id="statusError">
+                <h3>❌ Erro na Analise</h3>
+                <p id="errorMessage">Verifique a URL e tente novamente.</p>
+            </div>
+
+            <div class="status success" id="statusSuccess">
+                <h3>✅ Relatorio Gerado!</h3>
+                <p>O relatorio foi criado com sucesso.</p>
+                <div class="score-preview" id="scorePreview">
+                    <h4>Score: <span id="finalScore">0</span>/100</h4>
+                    <div class="score-bars" id="scoreBars"></div>
+                </div>
+                <div class="result-actions">
+                    <a href="#" class="btn-secondary" id="viewReport" target="_blank">Ver Relatorio</a>
+                    <button class="btn-secondary" id="newAnalysis">Nova Analise</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="how-it-works">
+            <h2>Como Funciona</h2>
+            <div class="steps-list">
+                <div class="step-item"><div class="step-number">1</div><div class="step-title">Insira a URL</div><div class="step-desc">Digite o endereco do site</div></div>
+                <div class="step-item"><div class="step-number">2</div><div class="step-title">Analise Automatica</div><div class="step-desc">Extrai e analisa dados</div></div>
+                <div class="step-item"><div class="step-number">3</div><div class="step-title">Relatorio</div><div class="step-desc">Receba insights</div></div>
+            </div>
+        </div>
+
+        <div class="footer"><p>BMAD Skills</p></div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        const form = document.getElementById('analyzeForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const urlInput = document.getElementById('url');
+        const statusLoading = document.getElementById('statusLoading');
+        const statusError = document.getElementById('statusError');
+        const statusSuccess = document.getElementById('statusSuccess');
+        const statusMessage = document.getElementById('statusMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        const viewReport = document.getElementById('viewReport');
+        const newAnalysisBtn = document.getElementById('newAnalysis');
+        const scoreBars = document.getElementById('scoreBars');
+        const finalScoreEl = document.getElementById('finalScore');
+        const serverStatus = document.getElementById('serverStatus');
+
+        const dimensionNames = {
+            presenceDigital: 'Presenca Digital',
+            socialMedia: 'Redes Sociais',
+            cultureInnovation: 'Cultura Inovacao',
+            communication: 'Comunicacao',
+            transformation: 'Transformacao'
+        };
+
+        function setStep(num, state) {
+            const el = document.getElementById('step' + num);
+            if (el) el.className = 'step-indicator ' + state;
+        }
+
+        function resetSteps() {
+            for (let i = 1; i <= 4; i++) setStep(i, 'pending');
+        }
+
+        function showStatus(el) {
+            statusLoading.style.display = 'none';
+            statusError.style.display = 'none';
+            statusSuccess.style.display = 'none';
+            if (el) el.style.display = 'block';
+        }
+
+        function getScoreColor(score) {
+            if (score >= 70) return 'var(--success)';
+            if (score >= 40) return 'var(--warning)';
+            return 'var(--danger)';
+        }
+
+        function renderScoreBars(scores) {
+            let html = '';
+            for (const [key, value] of Object.entries(scores)) {
+                if (key === 'finalScore') continue;
+                const name = dimensionNames[key] || key;
+                html += '<div class="score-bar"><span class="score-bar-label">' + name + '</span><div class="score-bar-fill"><div style="width:' + value + '%;height:100%;background:' + getScoreColor(value) + ';border-radius:4px;"></div></div><span class="score-bar-value">' + value + '</span></div>';
+            }
+            scoreBars.innerHTML = html;
+            finalScoreEl.textContent = scores.finalScore || 0;
+        }
+
+        async function checkServer() {
+            try {
+                const res = await fetch(API_BASE + '/');
+                if (res.ok) {
+                    serverStatus.textContent = 'Servidor conectado - pronto para analisar';
+                    serverStatus.className = 'server-status connected';
+                    return true;
+                }
+            } catch (e) {
+                serverStatus.textContent = 'Servidor desconectado - inicie o servidor';
+                serverStatus.className = 'server-status disconnected';
+                return false;
+            }
+        }
+
+        async function runAnalysis(url) {
+            resetSteps();
+            showStatus(statusLoading);
+            submitBtn.disabled = true;
+
+            const steps = [
+                { num: 1, msg: 'Conectando ao site...' },
+                { num: 2, msg: 'Extraindo dados...' },
+                { num: 3, msg: 'Calculando scores...' },
+                { num: 4, msg: 'Gerando relatorio...' }
+            ];
+
+            try {
+                for (const s of steps) {
+                    setStep(s.num, 'active');
+                    statusMessage.textContent = s.msg;
+                    await new Promise(r => setTimeout(r, 400));
+                }
+
+                const response = await fetch(API_BASE + '/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.details || data.error || 'Erro na analise');
+                }
+
+                for (let i = 1; i <= 4; i++) setStep(i, 'done');
+
+                showStatus(statusSuccess);
+                viewReport.href = API_BASE + '/reports/' + data.filename;
+
+                if (data.scores) renderScoreBars(data.scores);
+
+            } catch (error) {
+                console.error('Erro completo:', error);
+                let msg = error.message || 'Erro desconhecido';
+                if (msg.includes('fetch') || msg.includes('network') || msg === 'Failed to fetch') {
+                    msg = 'Servidor nao esta rodando. Verifique se o servidor esta ativo (npm start).';
+                }
+                errorMessage.textContent = msg;
+                showStatus(statusError);
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const url = urlInput.value.trim();
+            if (url) await runAnalysis(url);
+        });
+
+        newAnalysisBtn.addEventListener('click', () => {
+            urlInput.value = '';
+            showStatus(null);
+            urlInput.focus();
+        });
+
+        checkServer();
+        setInterval(checkServer, 30000);
+        urlInput.focus();
+    </script>
+</body>
+</html>
