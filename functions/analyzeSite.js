@@ -4,83 +4,198 @@ const cheerio = require('cheerio');
 const BASE_TIMEOUT = 15000;
 const MAX_PAGES = 8;
 
+async function searchGoogleCompetitors(companyName, businessType, region) {
+  const businessQueries = {
+    'Academia': 'maiores redes academias Brasil',
+    'Restaurante': 'melhores restaurantes Brasil',
+    'Clínica Médica': 'melhores hospitais clínicas Brasil',
+    'Farmácia': 'redes drogarias Brasil',
+    'Educação': 'melhores universidades faculdades Brasil',
+    'Advocacia': 'melhores escritórios advocacia Brasil',
+    'Contabilidade': 'escritórios contabilidade Brasil',
+    'Imobiliária': 'melhores imobiliárias Brasil',
+    'Pet Shop': 'redes pet shop Brasil',
+    'Beleza/Salão': 'melhores salões beleza Brasil',
+    'Odontologia': 'redes clínicas odontológicas Brasil',
+    'Associação/Entidade': 'federações associações comerciais Brasil',
+    'Varejo': 'maiores varejistas Brasil',
+    'E-commerce': 'maiores e-commerces Brasil',
+    'Tecnologia/Software': 'principais empresas tecnologia Brasil',
+    'Financeiro': 'principais fintechs bancos Brasil',
+    'Turismo': 'melhores agências turismo Brasil',
+    'Hotel/Pousada': 'melhores redes hotéis Brasil'
+  };
+  
+  const queries = [
+    `principais concorrentes ${companyName}`,
+    businessQueries[businessType] || `${businessType} Brasil`,
+    `ranking ${businessType} Brasil`
+  ];
+  
+  if (region) {
+    queries.push(`${businessType} ${region} ranking`);
+  }
+  
+  const allCompetitors = new Set();
+  
+  for (const query of queries) {
+    try {
+      const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+      
+      const response = await fetch(searchUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'pt-BR,pt;q=0.9'
+        }
+      });
+      
+      const html = await response.text();
+      const $ = cheerio.load(html);
+      let allText = '';
+      
+      $('a').each((i, el) => {
+        const href = $(el).attr('href') || '';
+        if (href.includes('uddg=') || href.match(/\/l\/\?/)) {
+          const text = $(el).text().trim();
+          if (text && text.length > 5) {
+            allText += text + ' ';
+          }
+        }
+      });
+      
+      $('p').each((i, el) => {
+        const text = $(el).text().trim();
+        if (text && text.length > 20) {
+          allText += text + ' ';
+        }
+      });
+      
+      const found = extractCompanyNames(allText);
+      found.forEach(name => allCompetitors.add(name));
+      
+    } catch (error) {
+      console.log(`[Busca] Erro: ${error.message}`);
+    }
+  }
+  
+  const filtered = Array.from(allCompetitors)
+    .filter(c => !c.toLowerCase().includes(companyName.toLowerCase()))
+    .filter(c => c.length > 2 && c.length < 50)
+    .slice(0, 10);
+  
+  return filtered;
+}
+
+function extractCompanyNames(text) {
+  const names = [];
+  
+  const knownCompanies = [
+    'Smart Fit', 'Bio Ritmo', "Gold's Gym", 'CrossFit', 'Curves', 'Blue Fit', 'Power Fit',
+    'Bodytech', 'Smart Fit Low', 'Next Fit',
+    'Gympass', 'TotalPass', 'Cultfit', 'Fitness Park',
+    'McFit', 'FitX', 'Cleverfit', 'Physique',
+    'Rede DOr', 'Hospital Albert Einstein', 'Sírio-Libanês', 'Fleury', 'Sabin', 'A+',
+    'Magazine Luiza', 'Americanas', 'Casas Bahia', 'Mercado Livre', 'Amazon', 'Shopee',
+    'Totvs', 'SAP', 'Oracle', 'Salesforce', 'Locaweb',
+    'Rock Content', 'Resultados Digitais', 'RD Station', 'HubSpot', 'Youpage',
+    'Nubank', 'C6 Bank', 'Inter', 'PicPay', 'PagSeguro', 'Mercado Pago',
+    'Petlove', 'Petz', 'Cobasi', 'Petland', 'Cãobeira',
+    'FECOMÉRCIO', 'CNC', 'ACSP', 'CDL', 'Sebrae', 'SENAI', 'SESI',
+    'Drogaria São Paulo', 'Drogarias Extra', 'Drogaria Araujo', 'Drogasil', 'Raia', 'Pague Menos',
+    'Lopes', 'Viva Real', 'Zap Imóveis', 'Loft', 'MRV', 'Cyrela',
+    'Accenture', 'Deloitte', 'McKinsey', 'Bain', 'KPMG', 'EY', 'PwC'
+  ];
+  
+  for (const company of knownCompanies) {
+    if (text.toLowerCase().includes(company.toLowerCase())) {
+      names.push(company);
+    }
+  }
+  
+  const patterns = [
+    /([A-Z][a-zA-Zà-öø-ÿ]+(?:\s+[A-Z][a-zA-Zà-öø-ÿ]+){0,3})/g
+  ];
+  
+  for (const pattern of patterns) {
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      const name = match[1].trim();
+      if (name.length > 4 && name.length < 40 && 
+          !/^(?:de|do|da|dos|das|para|com|sem|por|sob|sobre|mais|menos|que|qual|quem|como|este|esta|esses|essas|aquele|aquela)$/i.test(name) &&
+          !/^\d+$/.test(name)) {
+        names.push(name);
+      }
+    }
+  }
+  
+  return [...new Set(names)];
+}
+
 const SECTOR_BENCHMARKS = {
   'Tecnologia': {
     avgScores: { presenceDigital: 75, socialMedia: 70, cultureInnovation: 80, communication: 72, transformation: 78 },
     avgFinalScore: 75,
-    leaders: ['Nvidia', 'Apple', 'Microsoft', 'Google', 'Amazon', 'Meta', 'IBM', 'SAP', 'Oracle', 'Salesforce', 'Totvs', 'Locaweb', 'T-Mobile'],
     description: 'Setor de alta tecnologia e inovação'
   },
   'Financeiro': {
     avgScores: { presenceDigital: 70, socialMedia: 65, cultureInnovation: 55, communication: 68, transformation: 75 },
     avgFinalScore: 65,
-    leaders: ['Itau', 'Bradesco', 'Santander', 'Banco do Brasil', 'XP Inc', 'Nubank', 'C6 Bank', 'Inter', 'BTG Pactual', 'Safra'],
     description: 'Setor financeiro e bancário'
   },
   'Varejo': {
     avgScores: { presenceDigital: 72, socialMedia: 78, cultureInnovation: 50, communication: 70, transformation: 65 },
     avgFinalScore: 68,
-    leaders: ['Magazine Luiza', 'Americanas', 'Casas Bahia', 'Mercado Livre', 'Amazon Brasil', 'Shopee', 'Via Varejo', 'Renner', 'C&A', 'Macy\'s'],
     description: 'Setor de varejo e e-commerce'
   },
   'Saúde': {
     avgScores: { presenceDigital: 65, socialMedia: 60, cultureInnovation: 58, communication: 62, transformation: 55 },
     avgFinalScore: 60,
-    leaders: ['Hospital Israelita Albert Einstein', 'Sírio-Libanês', 'Prevent Senior', 'Amil', 'Bradesco Saúde', 'Odonto', 'Fleury', 'DASA'],
     description: 'Setor de saúde e pharma'
   },
   'Educação': {
     avgScores: { presenceDigital: 68, socialMedia: 65, cultureInnovation: 72, communication: 75, transformation: 60 },
     avgFinalScore: 68,
-    leaders: ['Khan Academy', 'Coursera', 'Duolingo', 'Descomplica', 'Abitamento', 'Anhanguera', 'Pitágoras', 'Estácio', 'Grupo Positivo'],
     description: 'Setor de educação e edtech'
   },
   'Industrial': {
     avgScores: { presenceDigital: 55, socialMedia: 50, cultureInnovation: 65, communication: 52, transformation: 60 },
     avgFinalScore: 57,
-    leaders: ['Embraer', 'WEG', 'Petrobras', 'Vale', 'Gerdau', 'Ambev', 'BRF', 'Suzano', 'Klabin'],
     description: 'Setor industrial e manufacturing'
   },
   'Serviços': {
     avgScores: { presenceDigital: 62, socialMedia: 58, cultureInnovation: 55, communication: 60, transformation: 55 },
     avgFinalScore: 58,
-    leaders: ['Accenture', 'Deloitte', 'PwC', 'EY', 'KPMG', 'McKinsey', 'Randstad', 'Adecco'],
     description: 'Setor de serviços profissionais'
   },
   'Imobiliário': {
     avgScores: { presenceDigital: 65, socialMedia: 70, cultureInnovation: 45, communication: 62, transformation: 58 },
     avgFinalScore: 60,
-    leaders: ['MRV', 'Cyrela', 'Tenda', 'Eztec', 'Moura Dubeux', 'Aliansce', 'Multiplan', 'Iguatemi'],
     description: 'Setor imobiliário e construção'
   },
   'Alimentação': {
     avgScores: { presenceDigital: 60, socialMedia: 72, cultureInnovation: 48, communication: 65, transformation: 55 },
     avgFinalScore: 60,
-    leaders: ['McDonald\'s Brasil', 'Burger King', 'Subway Brasil', 'Starbucks Brasil', 'Domino\'s', 'iFood', 'Rappi'],
     description: 'Setor de alimentação e food service'
   },
   'Automotivo': {
     avgScores: { presenceDigital: 68, socialMedia: 65, cultureInnovation: 70, communication: 65, transformation: 72 },
     avgFinalScore: 69,
-    leaders: ['Toyota Brasil', 'Volkswagen', 'Ford Brasil', 'Chevrolet', 'Jeep Brasil', 'CAOA', 'BYD Brasil', 'Tesla'],
     description: 'Setor automotivo'
   },
   'Telecomunicações': {
     avgScores: { presenceDigital: 72, socialMedia: 70, cultureInnovation: 65, communication: 70, transformation: 72 },
     avgFinalScore: 70,
-    leaders: ['Vivo', 'Claro', 'TIM Brasil', 'Oi', 'Sky Brasil', 'Netflix Brasil', 'Globoplay'],
     description: 'Setor de telecomunicações e streaming'
   },
   'Associações': {
     avgScores: { presenceDigital: 55, socialMedia: 58, cultureInnovation: 62, communication: 58, transformation: 48 },
     avgFinalScore: 56,
-    leaders: ['CNC', 'Fecomério', ' CDL BH', 'Fenavist', 'Sesi', 'Senai', 'Sebrae', 'ACSP'],
     description: 'Setor de associações e entidades de classe'
   },
   'Default': {
     avgScores: { presenceDigital: 60, socialMedia: 55, cultureInnovation: 55, communication: 58, transformation: 55 },
     avgFinalScore: 57,
-    leaders: [],
     description: 'Setor genérico'
   }
 };
@@ -133,8 +248,13 @@ function classifySector(analysis, socialMedia) {
   return bestMatch.sector;
 }
 
-function generateBenchmark(analysis, scores, sector) {
+async function generateBenchmark(analysis, scores, sector, companyName) {
   const benchmark = SECTOR_BENCHMARKS[sector] || SECTOR_BENCHMARKS['Default'];
+  
+  const companySize = analysis.socialMedia?.linkedin?.companySize || 
+                      (analysis.socialMedia?.linkedin?.employees ? estimateCompanySize(analysis.socialMedia.linkedin.employees) : 'medium');
+  
+  const { competitors, productsAndServices, googleSearched } = await findRelevantCompetitors(companyName, sector, companySize, analysis.socialMedia, analysis);
   
   const gaps = {};
   const comparisons = {};
@@ -156,6 +276,14 @@ function generateBenchmark(analysis, scores, sector) {
   
   const percentile = calculatePercentile(scores.finalScore, benchmark.avgFinalScore);
   
+  const porteLabel = {
+    'micro': 'Microempresa (1-10 funcionários)',
+    'small': 'Pequena (11-50 funcionários)',
+    'medium': 'Média (51-250 funcionários)',
+    'large': 'Grande (251-1000 funcionários)',
+    'enterprise': 'Grande Porte (1000+ funcionários)'
+  };
+  
   return {
     sector,
     sectorDescription: benchmark.description,
@@ -165,8 +293,396 @@ function generateBenchmark(analysis, scores, sector) {
     overallGap,
     percentile,
     dimensionComparisons: comparisons,
-    leaders: benchmark.leaders.slice(0, 5),
-    recommendations: generateGapRecommendations(gaps, sector)
+    leaders: competitors,
+    productsAndServices: productsAndServices,
+    recommendations: generateGapRecommendations(gaps, sector),
+    companySize,
+    companySizeLabel: porteLabel[companySize] || porteLabel['medium'],
+    competitorsSource: googleSearched ? 'Google + Base Local' : 'Base Local'
+  };
+}
+
+function estimateCompanySize(employeesStr) {
+  if (!employeesStr) return 'medium';
+  
+  const strLower = employeesStr.toLowerCase();
+  
+  if (strLower.includes('1-10') || strLower.includes('solo') || strLower.includes('micro')) return 'micro';
+  if (strLower.includes('11-50') || strLower.includes('11-200') || strLower.includes('pequena')) return 'small';
+  if (strLower.includes('51-200') || strLower.includes('201-500') || strLower.includes('média') || strLower.includes('media')) return 'medium';
+  if (strLower.includes('501-1000') || strLower.includes('501-1.000') || strLower.includes('grande')) return 'large';
+  if (strLower.includes('1001-') || strLower.includes('10000+') || strLower.includes('5001-') || strLower.includes('grande porte')) return 'enterprise';
+  
+  const cleanStr = employeesStr.replace(/[^\d]/g, '');
+  const count = parseInt(cleanStr) || 0;
+  
+  if (count <= 10) return 'micro';
+  if (count <= 50) return 'small';
+  if (count <= 250) return 'medium';
+  if (count <= 1000) return 'large';
+  return 'enterprise';
+}
+
+function identifyBusinessType(analysis) {
+  const allText = [
+    analysis.title || '',
+    analysis.description || '',
+    ...(analysis.headings || []),
+    ...(analysis.navLinks || []),
+    ...(analysis.footerLinks || [])
+  ].join(' ').toLowerCase();
+
+  const patterns = [
+    { negocio: 'Associação/Entidade', keywords: ['associação', 'associacao', 'cdl', 'federac', 'federacao', 'sindicato', 'câmara', 'camara', 'confederação', 'conselho', 'sesi', 'senai', 'sebrae', 'fecomério', 'acsp', 'acie', 'acium'], weight: 15 },
+    { negocio: 'Restaurante', keywords: ['cardápio', 'prato', 'chef', 'gastronomia', 'lanchonete', 'pizzaria', 'hamburgueria', 'bar e restaurante', 'comida caseira', 'delivery de comida', 'ifood', 'restaurante self-service', 'comida a kilo', 'bufê'], weight: 10 },
+    { negocio: 'Academia', keywords: ['academia', 'musculação', 'ginástica', 'crossfit', 'spinning', 'pilates', 'yoga', 'fitness', 'fit ', 'musculação e fitness', 'studio de pilates', 'academia de ginástica', 'fitness club', 'smart fit', 'bio ritmo', 'gold\'s gym'], weight: 12 },
+    { negocio: 'Clínica Médica', keywords: ['consultório médico', 'clínica médica', 'atendimento médico', 'médico', 'saúde', 'exames laboratoriais', 'laboratório', 'diagnóstico', 'atendimento clínico', 'clínica de saúde'], weight: 10 },
+    { negocio: 'Farmácia', keywords: ['farmácia', 'drogaria', 'medicamentos', 'remédios', 'manipulação', 'fitoterápicos'], weight: 10 },
+    { negocio: 'Educação', keywords: ['universidade', 'faculdade', 'ensino superior', 'graduação', 'pós-graduação', 'ead', 'colégio', 'escola', 'cursinho'], weight: 8 },
+    { negocio: 'Advocacia', keywords: ['escritório de advocacia', 'advogado', 'advocacia', 'tribunal', 'causa', 'direito', 'advocacia e consultoria'], weight: 10 },
+    { negocio: 'Contabilidade', keywords: ['escritório contábil', 'contabilidade', 'sped', 'departamento fiscal', 'assessoria contábil'], weight: 10 },
+    { negocio: 'Imobiliária', keywords: ['imobiliária', 'venda de imóveis', 'aluguel de imóvel', 'apartamentos à venda', 'casas à venda', 'corretora de imóveis', 'imóveis para'], weight: 10 },
+    { negocio: 'Pet Shop', keywords: ['pet shop', 'petz', 'petshop', 'veterinário', 'veterinária', 'banho e tosa', 'ração', 'clínica veterinária', 'pets', 'cachorro', 'gato', 'animal de estimação', 'cobasi'], weight: 12 },
+    { negocio: 'Beleza/Salão', keywords: ['salão de beleza', 'cabelo', 'manicure', 'pedicure', 'estética', 'maquiagem', 'corte de cabelo', 'escova', 'coloração', 'tratamento capilar'], weight: 10 },
+    { negocio: 'Odontologia', keywords: ['dentista', 'odontologia', 'implante dentário', 'tratamento odontológico', 'clínica odontológica', 'ortodontia'], weight: 10 },
+    { negocio: 'Autos', keywords: ['concessionária', 'veículos', 'automóveis', 'carros novos', 'carros usados', 'motos', 'seminovos'], weight: 8 },
+    { negocio: 'Construção/Reformas', keywords: ['construção civil', 'reformas', 'arquitetura', 'projeto arquitetônico', 'obra', 'projetos', 'projetos e execução'], weight: 8 },
+    { negocio: 'Moda/Roupas', keywords: ['loja de roupas', 'moda feminina', 'moda masculina', 'boutique', 'vestuário', 'confecção'], weight: 8 },
+    { negocio: 'Hotel/Pousada', keywords: ['hotel', 'pousada', 'resort', 'hospedagem', 'reserva de quarto', 'chalé', 'hostel'], weight: 10 },
+    { negocio: 'Turismo', keywords: ['agência de turismo', 'passagens aéreas', 'pacotes turísticos', 'viagens', 'turismo', 'viagens e turismo'], weight: 10 },
+    { negocio: 'Logística', keywords: ['transportadora', 'frete', 'entrega de carga', 'logística', 'mudanças', 'armazenagem'], weight: 10 },
+    { negocio: 'Tecnologia/Software', keywords: ['desenvolvimento de software', 'sistema personalizado', 'programação', 'dev', 'app sob medida', 'soluções tecnológicas', 'ti ', ' tecnologia da informação'], weight: 8 },
+    { negocio: 'Financeiro', keywords: ['banco', 'fintech', 'crédito', 'investimentos', 'finanças', 'corretora de seguros', 'seguradora'], weight: 8 },
+    { negocio: 'Varejo', keywords: ['supermercado', 'atacarejo', 'mercadinho', 'loja física', 'autosserviço', 'hipermercado'], weight: 8 },
+    { negocio: 'E-commerce', keywords: ['loja virtual', 'comprar online', 'carrinho de compras', 'e-commerce', 'compre online'], weight: 8 },
+    { negocio: 'Eventos', keywords: ['buffet para festas', 'espaço para eventos', 'festa de casamento', 'festa deformatura', 'buffet', 'eventos e fest'], weight: 10 },
+    { negocio: 'Barbearia', keywords: ['barbearia', 'barbeiro', 'corte masculino', 'barba', 'navalha'], weight: 10 },
+    { negocio: 'Oficina Mecânica', keywords: ['oficina mecânica', 'mecânica', 'auto mecânica', 'funilaria', 'pintura'], weight: 10 },
+    { negocio: 'Lavanderia', keywords: ['lavanderia', 'lavanderia self-service', 'lavagem de roupas', 'tinturaria'], weight: 10 },
+    { negocio: 'Prestador de Serviços', keywords: ['prestador de serviços', 'prestação de serviços', 'serviços gerais'], weight: 5 }
+  ];
+
+  let bestMatch = { negocio: 'Prestador de Serviços', score: 0 };
+  
+  for (const pattern of patterns) {
+    let matchCount = 0;
+    for (const keyword of pattern.keywords) {
+      if (allText.includes(keyword)) {
+        matchCount += pattern.weight;
+      }
+    }
+    if (matchCount > bestMatch.score) {
+      bestMatch = { negocio: pattern.negocio, score: matchCount };
+    }
+  }
+
+  console.log(`[Business] Melhor match: ${bestMatch.negocio} (score: ${bestMatch.score})`);
+
+  return {
+    tipo: bestMatch.negocio,
+    score: bestMatch.score
+  };
+}
+
+function analyzeProductsAndServices(analysis) {
+  const businessType = identifyBusinessType(analysis);
+  
+  const allText = [
+    ...(analysis.headings || []),
+    ...(analysis.navLinks || []),
+    ...(analysis.footerLinks || []),
+    analysis.mainContent || ''
+  ].join(' ').toLowerCase();
+
+  const negocioCompetitors = {
+    'Associação/Entidade': { principais: ['FECOMÉRCIO', 'CNC', 'ACSP', ' CDL BH', 'Sebrae', 'SENAI', 'SESI'], regional: ['CDL São Paulo', 'ACIEB', 'ACIM', 'ACIC'], similares: ['SINDICATO', 'Federações Regionais'] },
+    'Restaurante': { principais: ['MC Donalds', 'Burger King', 'Subway', 'Pizza Hut'], regional: ['Chopp Brahma', 'Habibs', 'Giraffas', 'Bobs', 'KFC'], similares: ['Outback', 'Applebees', 'Vea', 'Spoleto'] },
+    'Academia': { principais: ['Smart Fit', 'Bio Ritmo', 'Gold\'s Gym'], regional: ['Academia Forma', 'Blue Fit', 'Power Fit'], similares: ['CrossFit', 'Curves', 'Smart Fit Low'] },
+    'Clínica Médica': { principais: ['Albert Einstein', 'Sirio-Libanes', 'Oswaldo Cruz'], regional: ['Fleury', 'DASA', 'Diagnóstico por Imagem'], similares: ['Lavoisier', 'A+', 'CDB'] },
+    'Farmácia': { principais: ['Drogaria São Paulo', 'Drogarias Extra', 'Raia'], regional: ['Drogasil', 'Pague Menos', 'Ultrafarma'], similares: ['Onofre', 'Drogaria Venâncio'] },
+    'Educação': { principais: ['Anhanguera', 'Estácio', 'Pitágoras'], regional: ['Unopar', 'UNIP', 'UniFIJ'], similares: ['Coursera', 'Alura', 'Descomplica'] },
+    'Advocacia': { principais: ['TozziniFreire', 'Mattos Filho', 'Mendes Kaufmann'], regional: ['Levy & Partners', 'Cascione'], similares: ['Siqueira e Castro', 'Baraldi'] },
+    'Contabilidade': { principais: ['Contabilizei', 'Contabilidade App'], regional: ['Contabil', 'Nexcore', 'Confere'], similares: ['Contador Online', 'Guia Contábil'] },
+    'Imobiliária': { principais: ['Loft', 'Viva Real', 'Zap Imóveis'], regional: ['Lopes', 'Fernandes', 'Cyrela'], similares: ['MRV', 'Tenda', 'Eztec'] },
+    'Pet Shop': { principais: ['Petlove', 'Petz', 'Cobasi'], regional: ['Pet Center', 'Petland'], similares: ['Cãobeira', 'Amigo Fiel'] },
+    'Beleza/Salão': { principais: ['Beleza Natural'], regional: ['Espaço Beauty', 'Studio W'], similares: ['Hair Studio', 'Salão da Kate'] },
+    'Odontologia': { principais: ['Orthodontic', 'Implante'], regional: ['Sorriden', 'Implart'], similares: ['CIO', 'Dental'] },
+    'Autos': { principais: ['Volkswagen', 'Toyota', 'Ford', 'Chevrolet'], regional: ['Honda', 'Fiat', 'BYD'], similares: ['CAOA', 'Lokam'] },
+    'Construção/Reformas': { principais: ['C&C', 'Leroy Merlin'], regional: ['Makro', 'Casa & Construção'], similares: ['Ponto das Telhas'] },
+    'Moda/Roupas': { principais: ['Renner', 'C&A', 'Riachuelo'], regional: ['Marisa', 'Lojas Renner'], similares: ['Nike', 'Adidas', 'Zattini'] },
+    'Hotel/Pousada': { principais: ['Accor', 'Marriott', 'Hilton'], regional: ['Ibis', 'Holiday Inn'], similares: ['Airbnb', 'Booking.com'] },
+    'Turismo': { principais: ['CVC', 'Decolar', 'Viagens Combo'], regional: ['Submarino Viagens'], similares: ['Booking', 'Airbnb'] },
+    'Logística': { principais: ['iFood', 'Lalamove', 'Loggi'], regional: ['Intelipost', 'Jadlog'], similares: ['Azul Cargo'] },
+    'Marketing Digital': { principais: ['Rock Content', 'Resultados Digitais'], regional: ['RD Station', 'Youpage'], similares: ['HubSpot', 'Mauá Digital'] },
+    'Tecnologia/Software': { principais: ['Totvs', 'SAP', 'Oracle'], regional: ['Locaweb', 'Vindi'], similares: ['RD Station', 'Pagar.me'] },
+    'Consultoria': { principais: ['Accenture', 'Deloitte', 'McKinsey'], regional: ['Bain', 'KPMG'], similares: ['EY', 'PwC'] },
+    'Financeiro': { principais: ['Nubank', 'C6 Bank', 'Inter'], regional: ['PicPay', 'PagSeguro'], similares: ['Mercado Pago'] },
+    'Varejo': { principais: ['Magazine Luiza', 'Americanas', 'Casas Bahia'], regional: ['Ponto Frio', 'Shoptime'], similares: ['Amazon', 'Shopee'] },
+    'E-commerce': { principais: ['Shopee', 'Mercado Livre', 'Amazon Brasil'], regional: ['Magazine Luiza', 'Americanas'], similares: ['Shopify', 'VTEX', 'Nuvemshop'] },
+    'Eventos': { principais: ['Buffet'], regional: ['Espaço para eventos'], similares: ['Buffet infantil'] },
+    'Fitness': { principais: ['Smart Fit', 'Bio Ritmo'], regional: ['Blue Fit', 'Power Fit'], similares: ['CrossFit'] },
+    'Barbearia': { principais: ['Barber Shop', 'Imperial Barber'], regional: ['Barbearia do Bairro'], similares: ['Big Boss Barber', 'Old Town Barber'] },
+    'Oficina Mecânica': { principais: ['Volkswagen', 'Toyota', 'Ford'], regional: ['Honda', 'Fiat'], similares: ['CAOA', 'Localiza'] },
+    'Lavanderia': { principais: ['Lavanderia 5àsec', 'Lavanderia drop'], regional: ['Lavanderia Express'], similares: ['Lavanderia Self Service'] },
+    'Prestador de Serviços': { principais: ['SERASA', 'Sebrae'], regional: ['SENAI', 'SESC'], similares: ['Prestadores Regionais'] }
+  };
+
+  const servicosDetectados = [];
+  const serviceIndicators = [
+    { servico: 'Delivery', keywords: ['delivery', 'entrega', 'ifood', 'rappi'] },
+    { servico: 'Atendimento 24h', keywords: ['24 horas', '24h', 'plantão'] },
+    { servico: 'Agendamento Online', keywords: ['agendamento', 'agendar', 'horário'] },
+    { servico: 'Pagamento Online', keywords: ['pagamento online', 'pix', 'cartão'] },
+    { servico: 'Chatbot', keywords: ['chatbot', 'atendimento automático'] },
+    { servico: 'whatsapp', keywords: ['whatsapp', 'zap'] },
+    { servico: 'Delivery', keywords: ['delivery', 'entrega em domicílio'] }
+  ];
+
+  for (const s of serviceIndicators) {
+    for (const kw of s.keywords) {
+      if (allText.includes(kw)) {
+        if (!servicosDetectados.includes(s.servico)) {
+          servicosDetectados.push(s.servico);
+        }
+        break;
+      }
+    }
+  }
+
+  const negocioInfo = negocioCompetitors[businessType.tipo] || negocioCompetitors['Varejo'];
+  const todosConcorrentes = [...(negocioInfo.principais || []), ...(negocioInfo.regionais || []), ...(negocioInfo.similares || [])];
+
+  console.log(`[Products] Negócio identificado: ${businessType.tipo} (score: ${businessType.score})`);
+  console.log(`[Products] Concorrentes: ${todosConcorrentes.join(', ')}`);
+
+  return {
+    tipo: businessType.tipo,
+    score: businessType.score,
+    servicos: servicosDetectados,
+    negocios: [{
+      tipo: businessType.tipo,
+      concorrentes: todosConcorrentes
+    }],
+    produtos: [],
+    categorias: []
+  };
+}
+
+function extractRegion(url, analysis) {
+  const statePatterns = {
+    'SP': ['.sp.', 'sp.com.br', '/sp/', '-sp', '_sp', 'são paulo', 'sao paulo', 'campinas', 'santos', 'ribeirao', 'sao bernardo', 'guarulhos', 'osasco', 'barueri', 'jundiai', 'são josé dos campos'],
+    'RJ': ['.rj.', 'rj.com.br', '/rj/', '-rj', '_rj', 'niteroi', 'niterói', 'rio de janeiro', 'nova iguacu', 'petropolis', 'belford roxo', 'duque de caxias'],
+    'MG': ['.mg.', 'mg.com.br', '/mg/', '-mg', '_mg', 'belo horizonte', 'bh ', 'uberlandia', 'contagem', 'juiz de fora', 'betim', 'sete lagoas'],
+    'BA': ['.ba.', 'ba.com.br', '/ba/', '-ba', '_ba', 'bahia', 'salvador', 'feira de santana', 'victoria da conquista'],
+    'PE': ['.pe.', 'pe.com.br', '/pe/', '-pe', '_pe', 'pernambuco', 'recife', 'olinda', 'jaboatao', 'caruaru'],
+    'PR': ['.pr.', 'pr.com.br', '/pr/', '-pr', '_pr', 'parana', 'curitiba', 'londrina', 'maringa', 'foz do iguaçu'],
+    'RS': ['.rs.', 'rs.com.br', '/rs/', '-rs', '_rs', 'rio grande do sul', 'porto alegre', 'gramado', 'caxias do sul', 'pelotas'],
+    'SC': ['.sc.', 'sc.com.br', '/sc/', '-sc', '_sc', 'santa catarina', 'florianopolis', 'blumenau', 'joinville', 'itajai'],
+    'GO': ['.go.', 'go.com.br', '/go/', '-go', '_go', 'goias', 'goiânia', 'goiania', 'anapolis', 'rio verde'],
+    'DF': ['.df.', 'df.com.br', '/df/', '-df', '_df', 'brasilia', 'brasília', 'ceilandia', 'taguatinga', 'samambaia'],
+    'CE': ['.ce.', 'ce.com.br', '/ce/', '-ce', '_ce', 'ceara', 'fortaleza', 'caucaia', 'juazeiro do norte'],
+    'ES': ['.es.', 'es.com.br', '/es/', '-es', '_es', 'vitoria', 'vitória', 'vila velha', 'serra', 'cariacica'],
+    'PA': ['.pa.', 'pa.com.br', '/pa/', '-pa', '_pa', 'belém', 'belem', 'ananindeua', 'santarem', 'maringa'],
+    'AM': ['.am.', 'am.com.br', '/am/', '-am', '_am', 'amazonas', 'manaus'],
+    'PB': ['.pb.', 'pb.com.br', '/pb/', '-pb', '_pb', 'paraíba', 'paraiba', 'joão pessoa', 'joao pessoa', 'campina grande'],
+    'AL': ['.al.', 'al.com.br', '/al/', '-al', '_al', 'alagoas', 'maceió', 'maceio'],
+    'MA': ['.ma.', 'ma.com.br', '/ma/', '-ma', '_ma', 'maranhão', 'maranhao', 'são luis', 'sao luis', 'imperatriz'],
+    'PI': ['.pi.', 'pi.com.br', '/pi/', '-pi', '_pi', 'piauí', 'piaui', 'teresina', 'parnaiba'],
+    'RN': ['.rn.', 'rn.com.br', '/rn/', '-rn', '_rn', 'natal', 'mossoro', 'parnamirim', 'rio grande do norte'],
+    'MT': ['.mt.', 'mt.com.br', '/mt/', '-mt', '_mt', 'cuiabá', 'cuiaba', 'rondonopolis', 'varejo'],
+    'MS': ['.ms.', 'ms.com.br', '/ms/', '-ms', '_ms', 'campo grande', 'dourados', 'mato grosso do sul', 'ms', 'aquidauana', 'tres lagoas', 'corumbá', 'ponta porã'],
+    'SE': ['.se.', 'se.com.br', '/se/', '-se', '_se', 'sergipe', 'aracaju'],
+    'RO': ['.ro.', 'ro.com.br', '/ro/', '-ro', '_ro', 'rondônia', 'rondonia', 'porto velho', 'ji-paraná'],
+    'TO': ['.to.', 'to.com.br', '/to/', '-to', '_to', 'tocantins', 'palmas', 'araguaina'],
+    'AC': ['.ac.', 'ac.com.br', '/ac/', '-ac', '_ac', 'acre', 'rio branco'],
+    'AP': ['.ap.', 'ap.com.br', '/ap/', '-ap', '_ap', 'amapá', 'amapa', 'macapá', 'macapa'],
+    'RR': ['.rr.', 'rr.com.br', '/rr/', '-rr', '_rr', 'roraima', 'boa vista']
+  };
+  
+  const urlLower = url.toLowerCase().replace(/https?:\/\//g, '').replace(/\//g, ' ');
+  
+  const allContent = [
+    analysis.title || '',
+    analysis.description || '',
+    (analysis.footerLinks || []).join(' '),
+    (analysis.navLinks || []).join(' ')
+  ].join(' ').toLowerCase();
+  
+  const textContent = allContent;
+  
+  const matches = [];
+  
+  for (const [state, patterns] of Object.entries(statePatterns)) {
+    for (const pattern of patterns) {
+      let regex;
+      if (pattern.length <= 2) {
+        regex = new RegExp('\\b' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+      } else {
+        regex = new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      }
+      if (regex.test(textContent)) {
+        matches.push({ state, pattern, length: pattern.length });
+      }
+    }
+  }
+  
+  if (matches.length > 0) {
+    matches.sort((a, b) => b.length - a.length);
+    console.log(`[Region] Match encontrado: ${matches[0].pattern} -> ${matches[0].state}`);
+    return matches[0].state;
+  }
+  
+  return null;
+}
+
+function findCompetitorsByProductsAndServices(productsAndServices, companyName, url, analysis) {
+  const region = extractRegion(url, analysis);
+  const competitors = new Set();
+  
+  const regionalCompetitors = {
+    'SP': {
+      'Restaurante': ['Bar do Luiz', 'Restaurante Fasano', 'Coco Bambu', 'Fogo de Chão', 'Outback SP', 'Mariantoni'],
+      'Academia': ['Academia Competition', 'Bio Ritmo', 'Smart Fit', 'Gold\'s Gym', 'Blue Fit', 'Power Fit'],
+      'Clínica Médica': ['Hospital Sirio-Libanes', 'Hospital Albert Einstein', 'Fleury', 'Sabin', 'A+'],
+      'Farmácia': ['Drogaria São Paulo', 'Drogarias Extra', 'Drogasil', 'Raia Drogasil'],
+      'Educação': ['Colégio Bandeirantes', 'Colégio Santa Cruz', 'FIA', 'ESPM'],
+      'Advocacia': ['TozziniFreire', 'Mattos Filho', 'Pinheiro Neto', 'Levy & Partners'],
+      'Contabilidade': ['Contabilizei', 'Contabilidade App', 'Confere'],
+      'Imobiliária': ['Lopes', 'Viva Real', 'Zap Imóveis', 'Fernando Simões'],
+      'Pet Shop': ['Petz', 'Cobasi', 'Pet Center Marginal', 'Petland'],
+      'Beleza/Salão': ['Salão Anaís', 'Espaço VIP Beauty', 'Studio W', 'Instituto de Beleza'],
+      'Odontologia': ['Orthodontic', 'Sorriden', 'CIO', 'Dental ODONTO'],
+      'Associação/Entidade': ['ACSP', 'CDL São Paulo', 'FECOMÉRCIO SP', 'ACIESP']
+    },
+    'RJ': {
+      'Restaurante': ['Bar do Flamengo', 'Marius', 'Saturnino', 'Porão', 'Zuka'],
+      'Academia': ['Smart Fit', 'Bio Ritmo', 'Academia Corp', 'Blue Fit'],
+      'Clínica Médica': ['Hospital Copa D\'Or', 'Hospital Samaritano', 'Lavoisier'],
+      'Farmácia': ['Drogaria Venancio', 'Drogarias Extra', 'Drogasil'],
+      'Associação/Entidade': ['ACERJ', 'CDL Rio', 'FECOMÉRCIO RJ', 'Sebrae RJ']
+    },
+    'MG': {
+      'Restaurante': ['Belo Traira', 'O Pascoal', 'Manteiga', 'Café de La Paix'],
+      'Academia': ['Smart Fit', 'Bio Ritmo', 'Academia Body Tech', 'Blue Fit'],
+      'Clínica Médica': ['Hospital Mater Dei', 'Felippo', 'Hermes Pardini'],
+      'Farmácia': ['Drogaria Araujo', 'Drogaria São Paulo', 'Ultrafarma'],
+      'Associação/Entidade': ['ACD', 'CDL BH', 'FECOMÉRCIO MG', 'Sebrae MG', 'ACI BH']
+    },
+    'PR': {
+      'Restaurante': ['Madalosso', 'Bamboo', 'Capo Restô', 'Verdi'],
+      'Academia': ['Smart Fit', 'Bio Ritmo', 'Academia Winner'],
+      'Farmácia': ['Drogaria São Paulo', 'Drogarias Extra'],
+      'Associação/Entidade': ['ACP', 'CDL Curitiba', 'FECOMÉRCIO PR', 'Sebrae PR']
+    },
+    'RS': {
+      'Restaurante': ['Café do Mercadinho', 'Bar do Centro', 'Restaurante Gallo'],
+      'Academia': ['Smart Fit', 'Bio Ritmo', 'Academia Shape'],
+      'Associação/Entidade': ['ACDIG', 'CDL POA', 'FECOMÉRCIO RS', 'Sebrae RS']
+    },
+    'SC': {
+      'Restaurante': ['Restaurante给你的', 'Casarão', 'Empório Santa Maria'],
+      'Academia': ['Smart Fit', 'Blue Fit', 'Bio Ritmo'],
+      'Associação/Entidade': ['ACAT', 'CDL Florianópolis', 'FECOMÉRCIO SC', 'Sebrae SC']
+    },
+    'BA': {
+      'Restaurante': ['Restaurante São Jorge', 'Casarão', 'Dona Ju'],
+      'Farmácia': ['Drogaria Araujo', 'Drogaria São Paulo'],
+      'Associação/Entidade': ['ACB', 'CDL Salvador', 'FECOMÉRCIO BA', 'Sebrae BA']
+    },
+    'PE': {
+      'Restaurante': ['Restaurante Leite', 'Bargaço', 'Beco do Frade'],
+      'Associação/Entidade': ['ACP', 'CDL Recife', 'FECOMÉRCIO PE', 'Sebrae PE']
+    },
+    'CE': {
+      'Restaurante': ['Restaurante Mumba', 'Café Santa Clara', 'Mário Lúdio'],
+      'Associação/Entidade': ['ACB', 'CDL Fortaleza', 'FECOMÉRCIO CE', 'Sebrae CE']
+    },
+    'GO': {
+      'Restaurante': ['Beco das Quituteiras', 'Restaurante da Júlia'],
+      'Associação/Entidade': ['ACG', 'CDL Goiânia', 'FECOMÉRCIO GO', 'Sebrae GO']
+    },
+    'DF': {
+      'Restaurante': ['KIKU', 'Tordesilhas', 'Cá com Fome'],
+      'Associação/Entidade': ['ACDF', 'CDL Brasília', 'FECOMÉRCIO DF', 'Sebrae DF']
+    }
+  };
+  
+  const businessType = productsAndServices.tipo || 'Geral';
+  
+  if (region && regionalCompetitors[region] && regionalCompetitors[region][businessType]) {
+    regionalCompetitors[region][businessType].forEach(c => competitors.add(c));
+  }
+  
+  if (productsAndServices.negocios && productsAndServices.negocios.length > 0) {
+    for (const negocio of productsAndServices.negocios) {
+      if (negocio.concorrentes) {
+        negocio.concorrentes.forEach(c => competitors.add(c));
+      }
+    }
+  }
+
+  let competitorsList = Array.from(competitors);
+
+  if (companyName) {
+    const nameLower = companyName.toLowerCase();
+    const cleanName = nameLower.replace(/[^a-záàâãéèêíìîóòôõúùûç0-9\s]/g, '').trim().replace(/\s+/g, '');
+    const nameParts = cleanName.split(/\s+/).filter(p => p.length > 2);
+    
+    competitorsList = competitorsList.filter(c => {
+      const cLower = c.toLowerCase();
+      const cClean = cLower.replace(/[^a-záàâãéèêíìîóòôõúùûç0-9\s]/g, '').trim().replace(/\s+/g, '');
+      
+      if (cLower.includes(nameLower) || nameLower.includes(cLower)) return false;
+      if (cleanName.includes(cClean) || cClean.includes(cleanName)) return false;
+      if (cleanName === cClean) return false;
+      
+      for (const part of nameParts) {
+        if (cClean.includes(part) && part.length > 3) return false;
+      }
+      
+      return true;
+    });
+  }
+
+  console.log(`[Competitors] Concorrentes: ${competitorsList.join(', ')}`);
+
+  return competitorsList;
+}
+
+async function findRelevantCompetitors(companyName, sector, companySize, socialMedia, analysis) {
+  const url = analysis.url || '';
+  const productsAndServices = analyzeProductsAndServices(analysis);
+  const region = extractRegion(url, analysis);
+  
+  console.log(`[Competitors] Empresa: ${companyName}, Tipo: ${productsAndServices.tipo}, Região: ${region || 'N/I'}`);
+  
+  const googleCompetitors = await searchGoogleCompetitors(
+    companyName, 
+    productsAndServices.tipo, 
+    region
+  );
+  
+  const localCompetitors = findCompetitorsByProductsAndServices(productsAndServices, companyName, url, analysis);
+  
+  const allCompetitors = [...new Set([...googleCompetitors, ...localCompetitors])];
+  
+  const competitorsList = allCompetitors.filter(c => {
+    const cLower = c.toLowerCase();
+    const nameLower = companyName.toLowerCase();
+    const cleanName = nameLower.replace(/[^a-záàâãéèêíìîóòôõúùûç0-9\s]/g, '').trim();
+    
+    if (cLower.includes(nameLower) || nameLower.includes(cLower)) return false;
+    if (cleanName.includes(cLower.replace(/\s+/g, '')) && cleanName.length > 3) return false;
+    
+    return true;
+  }).slice(0, 8);
+  
+  console.log(`[Competitors] Lista final: ${competitorsList.join(', ')}`);
+
+  return {
+    competitors: competitorsList,
+    productsAndServices: productsAndServices,
+    googleSearched: googleCompetitors.length > 0
   };
 }
 
@@ -305,6 +821,10 @@ const IMPORTANT_PATHS = [
 ];
 
 async function scrapeInternalPages(baseUrl, homepageHtml) {
+  if (!homepageHtml || typeof homepageHtml !== 'string') {
+    return {};
+  }
+  
   const $ = cheerio.load(homepageHtml);
   const base = getBaseUrl(baseUrl);
   
@@ -341,6 +861,10 @@ async function scrapeInternalPages(baseUrl, homepageHtml) {
 }
 
 function extractPageInfo(html, path) {
+  if (!html || typeof html !== 'string') {
+    return { pageType: 'outras', path, wordCount: 0 };
+  }
+  
   const $ = cheerio.load(html);
   const text = $('body').text();
   const wordCount = text.split(/\s+/).filter(w => w.length > 0).length;
@@ -502,29 +1026,32 @@ async function analyzeSocialMedia(socialLinks, companySlug) {
     if (!html) return null;
     
     const $ = cheerio.load(html);
-    const text = html;
+    const pageText = $('body').text().trim();
     
-    const followersMatch = text.match(/([\d.,]+)\s*(?:seguidores|followers)/i) || 
-                          text.match(/(\d+[\d.,]*)\s*followers/i);
+    const isBlocked = /access denied|acesso bloqueado|verifique|CAPTCHA/i.test(pageText);
     
-    const employeesMatch = text.match(/(\d+[\d.,]*)\s*(?:funcionários|employees)/i);
+    const followersMatch = pageText.match(/([\d.,]+)\s*(?:seguidores|followers)/i) || 
+                          pageText.match(/(\d+[\d.,]*)\s*followers/i);
     
-    const industryMatch = text.match(/Setor[:\s]+([^\n<]+)/i) || 
-                         text.match(/Industry[:\s]+([^\n<]+)/i);
+    const employeesMatch = pageText.match(/(\d+[\d.,]*)\s*(?:funcionários|employees)/i);
     
-    const sizeMatch = text.match(/Número de funcionários[:\s]+([^\n<]+)/i) ||
-                     text.match(/Company size[:\s]+([^\n<]+)/i);
+    const industryMatch = pageText.match(/Setor[:\s]+([^\n<]+)/i) || 
+                         pageText.match(/Industry[:\s]+([^\n<]+)/i);
+    
+    const sizeMatch = pageText.match(/Número de funcionários[:\s]+([^\n<]+)/i) ||
+                     pageText.match(/Company size[:\s]+([^\n<]+)/i);
     
     const aboutMatch = $('section[id="about"]').text().trim() ||
                       $('p[data-test-id="about-us-description"]').text().trim() ||
                       $('meta[name="description"]').attr('content') || '';
     
     const hasAboutSection = aboutMatch.length > 50;
-    const hasPosts = /publicações|posts|updates/i.test(text);
+    const hasPosts = /publicações|posts|updates/i.test(pageText);
     
     return {
       url,
       found: true,
+      blocked: isBlocked,
       followers: followersMatch ? followersMatch[1] : null,
       employees: employeesMatch ? employeesMatch[1] : null,
       industry: industryMatch ? industryMatch[1].trim() : null,
@@ -541,30 +1068,33 @@ async function analyzeSocialMedia(socialLinks, companySlug) {
     if (!html) return null;
     
     const $ = cheerio.load(html);
-    const text = html;
+    const pageText = $('body').text().trim();
     
-    const followersMatch = text.match(/"edge_followed_by":\s*\{"count":\s*(\d+)/) ||
-                          text.match(/"followers":\s*(\d+)/);
+    const isBlocked = /access denied|acesso bloqueado|CAPTCHA/i.test(pageText);
     
-    const postsMatch = text.match(/"edge_owner_to_timeline_media":\s*\{"count":\s*(\d+)/) ||
-                       text.match(/"media_count":\s*(\d+)/);
+    const followersMatch = html.match(/"edge_followed_by":\s*\{"count":\s*(\d+)/) ||
+                          html.match(/"followers":\s*(\d+)/);
     
-    const followingMatch = text.match(/"edge_follow":\s*\{"count":\s*(\d+)/);
+    const postsMatch = html.match(/"edge_owner_to_timeline_media":\s*\{"count":\s*(\d+)/) ||
+                       html.match(/"media_count":\s*(\d+)/);
+    
+    const followingMatch = html.match(/"edge_follow":\s*\{"count":\s*(\d+)/);
     
     const fullName = $('meta[property="og:title"]').attr('content') ||
-                   $('title').text().trim();
+                   $('title').text().trim().replace(/.*\//, '').replace(/\s*\(.*\)/, '');
     
-    const bioMatch = $('meta[name="description"]').attr('content') ||
-                    text.match(/"biography":"([^"]+)"/);
+    const bioMatch = $('meta[name="description"]').attr('content')?.replace(/.*Instagram:?\s*/i, '').trim() ||
+                    html.match(/"biography":"([^"]+)"/);
     
     return {
       url,
       found: true,
+      blocked: isBlocked,
       followers: followersMatch ? parseInt(followersMatch[1]).toLocaleString() : null,
       posts: postsMatch ? postsMatch[1] : null,
       following: followingMatch ? followingMatch[1] : null,
-      name: fullName,
-      bio: bioMatch ? bioMatch[1].replace(/\\n/g, ' ').substring(0, 300) : null,
+      name: fullName?.length > 0 ? fullName : null,
+      bio: bioMatch ? (typeof bioMatch === 'string' ? bioMatch : bioMatch[1]).replace(/\\n/g, ' ').substring(0, 300) : null,
     };
   }
 
@@ -574,30 +1104,33 @@ async function analyzeSocialMedia(socialLinks, companySlug) {
     if (!html) return null;
     
     const $ = cheerio.load(html);
-    const text = html;
+    const pageText = $('body').text().trim();
     
-    const likesMatch = text.match(/"page_liked":\s*(\d+)/) ||
-                     text.match(/(\d+[\d.,]*)\s*(?:curtidas|likes)/i) ||
-                     text.match(/"like_count":\s*(\d+)/);
+    const isBlocked = /access denied|acesso bloqueado|CAPTCHA/i.test(pageText);
     
-    const talkingMatch = text.match(/(\d+[\d.,]*)\s*(?:falando sobre isso|talking about)/i) ||
-                        text.match(/"talk_about_count":\s*(\d+)/);
+    const likesMatch = html.match(/"page_liked":\s*(\d+)/) ||
+                     html.match(/(\d+[\d.,]*)\s*(?:curtidas|likes)/i) ||
+                     html.match(/"like_count":\s*(\d+)/);
+    
+    const talkingMatch = html.match(/(\d+[\d.,]*)\s*(?:falando sobre isso|talking about)/i) ||
+                        html.match(/"talk_about_count":\s*(\d+)/);
     
     const pageName = $('meta[property="og:title"]').attr('content') ||
-                    $('title').text().trim();
+                    $('title').text().trim().replace(/.*\//, '').replace(/\s*-\s*Facebook.*/i, '');
     
-    const aboutMatch = $('meta[name="description"]').attr('content') ||
-                      text.match(/"about":"([^"]+)"/);
+    const aboutMatch = $('meta[name="description"]').attr('content')?.substring(0, 300) ||
+                      html.match(/"about":"([^"]+)"/);
     
-    const categoryMatch = text.match(/"category":"([^"]+)"/);
+    const categoryMatch = html.match(/"category":"([^"]+)"/);
     
     return {
       url,
       found: true,
+      blocked: isBlocked,
       likes: likesMatch ? parseInt(likesMatch[1]).toLocaleString() : null,
       talkingAbout: talkingMatch ? talkingMatch[1] : null,
-      name: pageName,
-      about: aboutMatch ? aboutMatch[1].replace(/\\n/g, ' ').substring(0, 300) : null,
+      name: pageName?.length > 0 ? pageName : null,
+      about: aboutMatch ? (typeof aboutMatch === 'string' ? aboutMatch : aboutMatch[1]).replace(/\\n/g, ' ').substring(0, 300) : null,
       category: categoryMatch ? categoryMatch[1] : null,
     };
   }
@@ -608,28 +1141,31 @@ async function analyzeSocialMedia(socialLinks, companySlug) {
     if (!html) return null;
     
     const $ = cheerio.load(html);
-    const text = html;
+    const pageText = $('body').text().trim();
     
-    const subscribersMatch = text.match(/"subscriberCountText":\s*\{"runs":\s*\[\{"text":\s*"([^"]+)"/) ||
-                          text.match(/(\d+[\d.,]*[KMB]?)\s*(?:inscritos|subscribers)/i) ||
-                          text.match(/"subscribers":"([^"]+)"/);
+    const isBlocked = /access denied|acesso bloqueado|CAPTCHA/i.test(pageText);
     
-    const videosMatch = text.match(/"videoCountText":\s*\{"runs":\s*\[\{"text":\s*"([^"]+)"/) ||
-                        text.match(/(\d+)\s*(?:vídeos|videos)/i);
+    const subscribersMatch = html.match(/"subscriberCountText":\s*\{"runs":\s*\[\{"text":\s*"([^"]+)"/) ||
+                          html.match(/(\d+[\d.,]*[KMB]?)\s*(?:inscritos|subscribers)/i) ||
+                          html.match(/"subscribers":"([^"]+)"/);
     
-    const channelName = $('meta[property="og:title"]').attr('content') ||
-                       $('title').text().trim();
+    const videosMatch = html.match(/"videoCountText":\s*\{"runs":\s*\[\{"text":\s*"([^"]+)"/) ||
+                        html.match(/(\d+)\s*(?:vídeos|videos)/i);
+    
+    const channelName = $('meta[property="og:title"]').attr('content')?.replace(/\s*-\s*YouTube.*/i, '') ||
+                       $('title').text().trim().replace(/\s*-\s*YouTube.*/i, '');
     
     const descriptionMatch = $('meta[name="description"]').attr('content');
     
-    const viewCountMatch = text.match(/(\d+[\d.,]*)\s*(?:visualizações|views)/i);
+    const viewCountMatch = html.match(/(\d+[\d.,]*)\s*(?:visualizações|views)/i);
     
     return {
       url,
       found: true,
+      blocked: isBlocked,
       subscribers: subscribersMatch ? subscribersMatch[1] : null,
       videos: videosMatch ? videosMatch[1] : null,
-      channelName,
+      channelName: channelName?.length > 0 ? channelName : null,
       description: descriptionMatch ? descriptionMatch.substring(0, 300) : null,
       viewCount: viewCountMatch ? viewCountMatch[1] : null,
     };
@@ -641,29 +1177,32 @@ async function analyzeSocialMedia(socialLinks, companySlug) {
     if (!html) return null;
     
     const $ = cheerio.load(html);
-    const text = html;
+    const pageText = $('body').text().trim();
     
-    const followersMatch = text.match(/"followers_count":\s*(\d+)/) ||
-                         text.match(/(\d+[\d.,]*)\s*(?:seguidores|followers)/i);
+    const isBlocked = /access denied|acesso bloqueado|CAPTCHA/i.test(pageText);
     
-    const followingMatch = text.match(/"following_count":\s*(\d+)/) ||
-                         text.match(/(\d+)\s*(?:seguindo|following)/i);
+    const followersMatch = html.match(/"followers_count":\s*(\d+)/) ||
+                         html.match(/(\d+[\d.,]*)\s*(?:seguidores|followers)/i);
     
-    const tweetsMatch = text.match(/"statuses_count":\s*(\d+)/) ||
-                       text.match(/(\d+)\s*(?:tweets|posts)/i);
+    const followingMatch = html.match(/"following_count":\s*(\d+)/) ||
+                         html.match(/(\d+)\s*(?:seguindo|following)/i);
     
-    const accountName = $('meta[property="og:title"]').attr('content') ||
-                      $('title').text().trim();
+    const tweetsMatch = html.match(/"statuses_count":\s*(\d+)/) ||
+                       html.match(/(\d+)\s*(?:tweets|posts)/i);
+    
+    const accountName = $('meta[property="og:title"]').attr('content')?.replace(/\s*\(.*\)\s*\|\s*X$/, '').replace(/\s*@\w+\s*-\s*X$/, '') ||
+                      $('title').text().trim().replace(/.*@/, '').replace(/\s*\(.*\)\s*\|\s*X$/, '');
     
     const bioMatch = $('meta[name="description"]').attr('content');
     
     return {
       url,
       found: true,
+      blocked: isBlocked,
       followers: followersMatch ? parseInt(followersMatch[1]).toLocaleString() : null,
       following: followingMatch ? followingMatch[1] : null,
       tweets: tweetsMatch ? tweetsMatch[1] : null,
-      name: accountName,
+      name: accountName?.length > 0 ? accountName : null,
       bio: bioMatch ? bioMatch.substring(0, 300) : null,
     };
   }
@@ -726,6 +1265,10 @@ function extractCompanyName(url) {
 }
 
 function analyzeSiteContent(html, url) {
+  if (!html || typeof html !== 'string') {
+    throw new Error('Não foi possível obter o conteúdo do site');
+  }
+  
   const $ = cheerio.load(html);
   
   const title = $('title').text().trim() || 'Sem título';
@@ -1167,14 +1710,26 @@ Responda APENAS com o JSON, sem texto adicional.`;
   }
 }
 
-async function analyzeSite(url, llmConfig = null) {
+async function analyzeSite(url, llmConfig = null, progressCallback = null) {
   console.log(`Iniciando análise de: ${url}`);
+  
+  const updateStep = (step, status, message) => {
+    if (progressCallback?.updateStep) {
+      progressCallback.updateStep(step, status, message);
+    }
+  };
+
+  updateStep(1, 'done', 'Site encontrado');
   
   const html = await fetchSite(url);
   const companyName = extractCompanyName(url);
   
+  updateStep(2, 'done', 'Conteúdo analisado');
+  
   console.log(`Analisando site de: ${companyName}`);
   const analysis = analyzeSiteContent(html, url);
+  
+  updateStep(3, 'done', 'Páginas raspadas');
   
   console.log(`Raspando páginas internas...`);
   const internalPages = await scrapeInternalPages(url, html);
@@ -1184,6 +1739,8 @@ async function analyzeSite(url, llmConfig = null) {
     console.log(`Páginas internas analisadas: ${Object.keys(internalPages).length}`);
   }
   
+  updateStep(4, 'done', 'Redes sociais analisadas');
+  
   console.log(`Analisando redes sociais...`);
   const companySlug = extractCompanySlug(url);
   const socialMedia = await analyzeSocialMedia(analysis.socialLinks, companySlug);
@@ -1192,6 +1749,8 @@ async function analyzeSite(url, llmConfig = null) {
   const activeSocials = socialMedia.summary?.activeProfiles || 0;
   console.log(`Redes sociais ativas encontradas: ${activeSocials}`);
   
+  updateStep(5, 'done', 'Setor identificado');
+  
   console.log(`Classificando setor e gerando benchmark...`);
   const sector = classifySector(analysis, socialMedia);
   console.log(`Setor identificado: ${sector}`);
@@ -1199,12 +1758,13 @@ async function analyzeSite(url, llmConfig = null) {
   
   if (llmConfig && llmConfig.apiKey) {
     console.log(`Usando LLM (${llmConfig.provider}) para análise avançada...`);
+    updateStep(6, 'done', 'Scores calculados');
     const llmResult = await analyzeWithLLM(analysis, llmConfig);
     llmResult.using_llm = true;
     llmResult.provider = llmConfig.provider.toUpperCase();
     
     const scores = llmResult.scores || { finalScore: 50, presenceDigital: 50, socialMedia: 50, cultureInnovation: 50, communication: 50, transformation: 50 };
-    llmResult.benchmark = generateBenchmark(analysis, scores, sector);
+    llmResult.benchmark = await generateBenchmark(analysis, scores, sector, companyName);
     llmResult.segmento = sector;
     
     return {
@@ -1217,12 +1777,14 @@ async function analyzeSite(url, llmConfig = null) {
   console.log('Usando análise baseada em regras...');
   const { calculateScores, getForcesAndGaps, getMainFindings, getRecommendations, getMaturityLevel } = require('./scoringRules');
   
+  updateStep(6, 'done', 'Scores calculados');
+  
   const scores = calculateScores(analysis);
   const { forces, gaps } = getForcesAndGaps(analysis, scores);
   const findings = getMainFindings(analysis, scores);
   const recommendations = getRecommendations(scores);
   const maturity = getMaturityLevel(scores.finalScore);
-  const benchmark = generateBenchmark(analysis, scores, sector);
+  const benchmark = await generateBenchmark(analysis, scores, sector, companyName);
   
   const result = {
     empresa: companyName,
@@ -1403,59 +1965,79 @@ function generateHTMLReport(result, analysis) {
             <table class="data-table">
                 <tr><th>Empresa</th><td>${result.empresa}</td></tr>
                 <tr><th>Segmento</th><td>${result.segmento || 'A ser definido'}</td></tr>
-                <tr><th>Porte</th><td>${result.porte || 'Não identificado'}</td></tr>
+                <tr><th>Porte</th><td>${result.benchmark?.companySizeLabel || result.porte || 'Não identificado'}</td></tr>
                 <tr><th>URL</th><td>${analysis.url}</td></tr>
                 <tr><th>Título do Site</th><td>${analysis.title}</td></tr>
                 <tr><th>Segurança HTTPS</th><td>${analysis.hasHttps ? '✓ Ativo' : '✗ Inativo'}</td></tr>
             </table>
         </section>
 
-        ${(analysis.socialMedia && analysis.socialMedia.summary && analysis.socialMedia.summary.activeProfiles > 0) || (analysis.socialMedia && (analysis.socialMedia.linkedin || analysis.socialMedia.instagram || analysis.socialMedia.youtube || analysis.socialMedia.facebook || analysis.socialMedia.twitter)) ? `
+        ${analysis.socialMedia && (analysis.socialMedia.linkedin || analysis.socialMedia.instagram || analysis.socialMedia.youtube || analysis.socialMedia.facebook || analysis.socialMedia.twitter) ? `
         <section class="card">
             <h2>Redes Sociais Analisadas</h2>
-            <p style="margin-bottom: 15px; color: var(--gray);">Perfis ${analysis.socialMedia.summary?.activeProfiles > 0 ? 'ativos encontrados: <strong>' + analysis.socialMedia.summary.activeProfiles : 'encontrados no site'}</strong></p>
+            <p style="margin-bottom: 15px; color: var(--gray);">Perfis encontrados no site: <strong>${analysis.socialMedia.summary?.activeProfiles || 0}</strong></p>
             <div class="social-grid">
                 ${analysis.socialMedia.linkedin ? `
-                    <div class="social-item linkedin">
+                    <div class="social-item linkedin ${analysis.socialMedia.linkedin.blocked && !analysis.socialMedia.linkedin.followers ? 'inactive' : ''}">
                         <div class="social-icon">🔗</div>
                         <div class="social-name">LinkedIn</div>
-                        <div class="social-stat">${analysis.socialMedia.linkedin.followers || 'N/D'}</div>
-                        <div class="social-label">seguidores</div>
-                        ${analysis.socialMedia.linkedin.employees ? `<div style="margin-top: 5px; font-size: 0.8rem; color: var(--gray);">${analysis.socialMedia.linkedin.employees} funcionários</div>` : ''}
+                        ${analysis.socialMedia.linkedin.followers ? `
+                            <div class="social-stat">${analysis.socialMedia.linkedin.followers}</div>
+                            <div class="social-label">seguidores</div>
+                            ${analysis.socialMedia.linkedin.employees ? `<div style="margin-top: 5px; font-size: 0.8rem; color: var(--gray);">${analysis.socialMedia.linkedin.employees} funcionários</div>` : ''}
+                        ` : `
+                            <div style="color: var(--gray); font-size: 0.85rem; margin-top: 5px;">Sem dados</div>
+                        `}
                     </div>
                 ` : ''}
                 ${analysis.socialMedia.instagram ? `
-                    <div class="social-item instagram">
+                    <div class="social-item instagram ${analysis.socialMedia.instagram.blocked && !analysis.socialMedia.instagram.followers ? 'inactive' : ''}">
                         <div class="social-icon">📸</div>
                         <div class="social-name">Instagram</div>
-                        <div class="social-stat">${analysis.socialMedia.instagram.followers || 'N/D'}</div>
-                        <div class="social-label">seguidores</div>
-                        ${analysis.socialMedia.instagram.posts ? `<div style="margin-top: 5px; font-size: 0.8rem; color: var(--gray);">${analysis.socialMedia.instagram.posts} posts</div>` : ''}
+                        ${analysis.socialMedia.instagram.followers ? `
+                            <div class="social-stat">${analysis.socialMedia.instagram.followers}</div>
+                            <div class="social-label">seguidores</div>
+                            ${analysis.socialMedia.instagram.posts ? `<div style="margin-top: 5px; font-size: 0.8rem; color: var(--gray);">${analysis.socialMedia.instagram.posts} posts</div>` : ''}
+                        ` : `
+                            <div style="color: var(--gray); font-size: 0.85rem; margin-top: 5px;">Sem dados</div>
+                        `}
                     </div>
                 ` : ''}
                 ${analysis.socialMedia.youtube ? `
-                    <div class="social-item youtube">
+                    <div class="social-item youtube ${analysis.socialMedia.youtube.blocked && !analysis.socialMedia.youtube.subscribers ? 'inactive' : ''}">
                         <div class="social-icon">▶️</div>
                         <div class="social-name">YouTube</div>
-                        <div class="social-stat">${analysis.socialMedia.youtube.subscribers || 'N/D'}</div>
-                        <div class="social-label">inscritos</div>
-                        ${analysis.socialMedia.youtube.videos ? `<div style="margin-top: 5px; font-size: 0.8rem; color: var(--gray);">${analysis.socialMedia.youtube.videos} vídeos</div>` : ''}
+                        ${analysis.socialMedia.youtube.subscribers ? `
+                            <div class="social-stat">${analysis.socialMedia.youtube.subscribers}</div>
+                            <div class="social-label">inscritos</div>
+                            ${analysis.socialMedia.youtube.videos ? `<div style="margin-top: 5px; font-size: 0.8rem; color: var(--gray);">${analysis.socialMedia.youtube.videos} vídeos</div>` : ''}
+                        ` : `
+                            <div style="color: var(--gray); font-size: 0.85rem; margin-top: 5px;">Sem dados</div>
+                        `}
                     </div>
                 ` : ''}
                 ${analysis.socialMedia.facebook ? `
-                    <div class="social-item facebook">
+                    <div class="social-item facebook ${analysis.socialMedia.facebook.blocked && !analysis.socialMedia.facebook.likes ? 'inactive' : ''}">
                         <div class="social-icon">👍</div>
                         <div class="social-name">Facebook</div>
-                        <div class="social-stat">${analysis.socialMedia.facebook.likes || 'N/D'}</div>
-                        <div class="social-label">curtidas</div>
+                        ${analysis.socialMedia.facebook.likes ? `
+                            <div class="social-stat">${analysis.socialMedia.facebook.likes}</div>
+                            <div class="social-label">curtidas</div>
+                        ` : `
+                            <div style="color: var(--gray); font-size: 0.85rem; margin-top: 5px;">Sem dados</div>
+                        `}
                     </div>
                 ` : ''}
                 ${analysis.socialMedia.twitter ? `
-                    <div class="social-item twitter">
+                    <div class="social-item twitter ${analysis.socialMedia.twitter.blocked && !analysis.socialMedia.twitter.followers ? 'inactive' : ''}">
                         <div class="social-icon">🐦</div>
                         <div class="social-name">Twitter/X</div>
-                        <div class="social-stat">${analysis.socialMedia.twitter.followers || 'N/D'}</div>
-                        <div class="social-label">seguidores</div>
+                        ${analysis.socialMedia.twitter.followers ? `
+                            <div class="social-stat">${analysis.socialMedia.twitter.followers}</div>
+                            <div class="social-label">seguidores</div>
+                        ` : `
+                            <div style="color: var(--gray); font-size: 0.85rem; margin-top: 5px;">Sem dados</div>
+                        `}
                     </div>
                 ` : ''}
             </div>
@@ -1542,17 +2124,37 @@ function generateHTMLReport(result, analysis) {
                     </tr>
                 </tbody>
             </table>
+            ${result.benchmark.productsAndServices && result.benchmark.productsAndServices.negocios && result.benchmark.productsAndServices.negocios.length > 0 ? `
+            <div style="margin-top: 20px; padding: 15px; background: var(--light); border-radius: 8px;">
+                <h4 style="color: var(--primary); margin-bottom: 10px;">Negócios e Concorrentes Identificados</h4>
+                ${result.benchmark.productsAndServices.negocios.map(n => `
+                <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #ddd;">
+                    <strong style="color: var(--secondary);">${n.tipo}:</strong>
+                    <div style="margin-top: 5px; font-size: 0.85rem; color: var(--gray);">
+                        <strong>Concorrentes:</strong> ${n.concorrentes.join(', ')}
+                    </div>
+                </div>
+                `).join('')}
+            </div>
+            ` : ''}
+            ${result.benchmark.productsAndServices && (result.benchmark.productsAndServices.produtos.length > 0 || result.benchmark.productsAndServices.servicos.length > 0) ? `
+            <div style="margin-top: 15px; padding: 12px; background: var(--light); border-radius: 8px;">
+                <p style="font-size: 0.85rem; color: var(--gray); margin-bottom: 5px;"><strong>Tecnologias/Serviços identificados:</strong></p>
+                ${result.benchmark.productsAndServices.servicos.length > 0 ? `<span style="font-size: 0.8rem; color: var(--gray);">${result.benchmark.productsAndServices.servicos.join(', ')}</span>` : ''}
+                ${result.benchmark.productsAndServices.produtos.length > 0 ? `<span style="font-size: 0.8rem; color: var(--gray); margin-left: 10px;">${result.benchmark.productsAndServices.produtos.join(', ')}</span>` : ''}
+            </div>
+            ` : ''}
             ${result.benchmark.leaders && result.benchmark.leaders.length > 0 ? `
             <div style="margin-top: 20px;">
-                <p style="color: var(--gray); font-size: 0.9rem; margin-bottom: 10px;">Líderes do setor para referência:</p>
+                <p style="color: var(--gray); font-size: 0.9rem; margin-bottom: 10px;">Outros concorrentes para referência:</p>
                 <div class="leader-list">
-                    ${result.benchmark.leaders.map(l => `<span class="leader-tag">${l}</span>`).join('')}
+                    ${result.benchmark.leaders.map(l => `<span class="leader-tag" title="Analise a presença digital deste concorrente">${l}</span>`).join('')}
                 </div>
             </div>
             ` : ''}
             ${result.benchmark.recommendations && result.benchmark.recommendations.length > 0 ? `
             <div style="margin-top: 20px; padding: 15px; background: var(--light); border-radius: 8px;">
-                <h4 style="color: var(--primary); margin-bottom: 10px;">Prioridades para追赶 Setorial</h4>
+                <h4 style="color: var(--primary); margin-bottom: 10px;">Prioridades para Catch-up Setorial</h4>
                 ${result.benchmark.recommendations.map(r => `
                     <div style="margin-bottom: 10px;">
                         <strong style="color: var(--danger);">${r.dimension}:</strong> ${r.action}

@@ -36,16 +36,18 @@
         .feature-text { font-size: 0.85rem; color: var(--gray); }
         .status { margin-top: 25px; padding: 20px; border-radius: 10px; display: none; }
         .status.loading { display: block; background: rgba(42, 157, 143, 0.1); border: 1px solid var(--success); }
-        .status.error { display: block; background: rgba(231, 111, 81, 0.1); border: 1px solid var(--danger); color: var(--danger); }
-        .status.success { display: block; background: rgba(42, 157, 143, 0.1); border: 1px solid var(--success); color: var(--success); }
+        .status.error { background: rgba(231, 111, 81, 0.1); border: 1px solid var(--danger); color: var(--danger); }
+        .status.success { background: rgba(42, 157, 143, 0.1); border: 1px solid var(--success); color: var(--success); }
         .status h3 { margin-bottom: 10px; font-size: 1.1rem; }
         .status p { color: var(--gray); font-size: 0.95rem; }
         .spinner-steps { margin-top: 15px; }
         .step-indicator { display: flex; align-items: center; gap: 10px; padding: 8px 0; color: var(--gray); font-size: 0.9rem; }
-        .step-indicator-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
-        .step-indicator.pending .step-indicator-icon { background: #e0e0e0; }
-        .step-indicator.active .step-indicator-icon { background: var(--accent); color: white; }
-        .step-indicator.done .step-indicator-icon { background: var(--success); color: white; }
+        .step-indicator-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; border: 2px solid #ccc; background: #f5f5f5; }
+        .step-indicator.pending .step-indicator-icon { background: #f5f5f5; border-color: #ccc; color: #999; }
+        .step-indicator.active .step-indicator-icon { background: var(--accent); border-color: var(--accent); color: white; animation: pulse 1s infinite; }
+        .step-indicator.done .step-indicator-icon { background: var(--success); border-color: var(--success); color: white; }
+        .step-indicator.done { color: var(--success); }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         .result-actions { margin-top: 20px; display: flex; gap: 10px; }
         .btn-secondary { flex: 1; padding: 12px; background: var(--light); color: var(--primary); border: 2px solid var(--primary); border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none; text-align: center; }
         .btn-secondary:hover { background: var(--primary); color: white; }
@@ -64,9 +66,6 @@
         .step-title { font-weight: 600; margin-bottom: 5px; }
         .step-desc { font-size: 0.85rem; opacity: 0.8; }
         .footer { text-align: center; margin-top: 40px; color: rgba(255,255,255,0.6); font-size: 0.85rem; }
-        .server-status { margin-top: 15px; padding: 10px; background: var(--light); border-radius: 8px; font-size: 0.85rem; text-align: center; }
-        .server-status.connected { color: var(--success); }
-        .server-status.disconnected { color: var(--danger); }
         @media (max-width: 600px) { .hero h1 { font-size: 1.8rem; } .features, .steps-list { grid-template-columns: 1fr; } .card { padding: 25px; } .score-bars { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -88,24 +87,17 @@
                 <button type="submit" class="btn" id="submitBtn">Analisar Site</button>
             </form>
 
-            <div class="server-status connected" id="serverStatus">
-                Servidor conectado - pronto para analisar
-            </div>
-
-            <div class="features">
-                <div class="feature"><div class="feature-icon">📊</div><div class="feature-text">5 Dimensoes</div></div>
-                <div class="feature"><div class="feature-icon">⚡</div><div class="feature-text">Rapido</div></div>
-                <div class="feature"><div class="feature-icon">📄</div><div class="feature-text">Relatorio HTML</div></div>
-            </div>
-
             <div class="status loading" id="statusLoading">
                 <h3>🔄 Analisando Site...</h3>
                 <p id="statusMessage">Aguarde...</p>
                 <div class="spinner-steps">
                     <div class="step-indicator pending" id="step1"><span class="step-indicator-icon">1</span><span>Buscando site</span></div>
-                    <div class="step-indicator pending" id="step2"><span class="step-indicator-icon">2</span><span>Extraindo dados</span></div>
-                    <div class="step-indicator pending" id="step3"><span class="step-indicator-icon">3</span><span>Calculando scores</span></div>
-                    <div class="step-indicator pending" id="step4"><span class="step-indicator-icon">4</span><span>Gerando relatorio</span></div>
+                    <div class="step-indicator pending" id="step2"><span class="step-indicator-icon">2</span><span>Analisando conteudo</span></div>
+                    <div class="step-indicator pending" id="step3"><span class="step-indicator-icon">3</span><span>Raspando paginas internas</span></div>
+                    <div class="step-indicator pending" id="step4"><span class="step-indicator-icon">4</span><span>Analisando redes sociais</span></div>
+                    <div class="step-indicator pending" id="step5"><span class="step-indicator-icon">5</span><span>Classificando setor</span></div>
+                    <div class="step-indicator pending" id="step6"><span class="step-indicator-icon">6</span><span>Calculando scores</span></div>
+                    <div class="step-indicator pending" id="step7"><span class="step-indicator-icon">7</span><span>Gerando relatorio</span></div>
                 </div>
             </div>
 
@@ -131,9 +123,9 @@
         <div class="how-it-works">
             <h2>Como Funciona</h2>
             <div class="steps-list">
-                <div class="step-item"><div class="step-number">1</div><div class="step-title">Insira a URL</div><div class="step-desc">Digite o endereco do site</div></div>
-                <div class="step-item"><div class="step-number">2</div><div class="step-title">Analise Automatica</div><div class="step-desc">Extrai e analisa dados</div></div>
-                <div class="step-item"><div class="step-number">3</div><div class="step-title">Relatorio</div><div class="step-desc">Receba insights</div></div>
+                <div class="step-item"><div class="step-number">1</div><div class="step-title">Insira a URL</div><div class="step-desc">Digite o endereco do site da empresa</div></div>
+                <div class="step-item"><div class="step-number">2</div><div class="step-title">Analise Automatica</div><div class="step-desc">Raspamos site, redes sociais e paginas internas</div></div>
+                <div class="step-item"><div class="step-number">3</div><div class="step-title">Relatorio Completo</div><div class="step-desc">Receba analise detalhada com benchmark</div></div>
             </div>
         </div>
 
@@ -154,7 +146,6 @@
         const newAnalysisBtn = document.getElementById('newAnalysis');
         const scoreBars = document.getElementById('scoreBars');
         const finalScoreEl = document.getElementById('finalScore');
-        const serverStatus = document.getElementById('serverStatus');
 
         const dimensionNames = {
             presenceDigital: 'Presenca Digital',
@@ -166,11 +157,13 @@
 
         function setStep(num, state) {
             const el = document.getElementById('step' + num);
-            if (el) el.className = 'step-indicator ' + state;
+            if (el) {
+                el.className = 'step-indicator ' + state;
+            }
         }
 
         function resetSteps() {
-            for (let i = 1; i <= 4; i++) setStep(i, 'pending');
+            for (let i = 1; i <= 7; i++) setStep(i, 'pending');
         }
 
         function showStatus(el) {
@@ -197,40 +190,57 @@
             finalScoreEl.textContent = scores.finalScore || 0;
         }
 
-        async function checkServer() {
-            try {
-                const res = await fetch(API_BASE + '/');
-                if (res.ok) {
-                    serverStatus.textContent = 'Servidor conectado - pronto para analisar';
-                    serverStatus.className = 'server-status connected';
-                    return true;
-                }
-            } catch (e) {
-                serverStatus.textContent = 'Servidor desconectado - inicie o servidor';
-                serverStatus.className = 'server-status disconnected';
-                return false;
-            }
-        }
-
         async function runAnalysis(url) {
             resetSteps();
             showStatus(statusLoading);
             submitBtn.disabled = true;
 
             const steps = [
-                { num: 1, msg: 'Conectando ao site...' },
-                { num: 2, msg: 'Extraindo dados...' },
-                { num: 3, msg: 'Calculando scores...' },
-                { num: 4, msg: 'Gerando relatorio...' }
+                { id: 1, msg: 'Buscando site...', delay: 800 },
+                { id: 2, msg: 'Analisando conteudo...', delay: 1200 },
+                { id: 3, msg: 'Raspando paginas internas...', delay: 1500 },
+                { id: 4, msg: 'Analisando redes sociais...', delay: 2000 },
+                { id: 5, msg: 'Classificando setor...', delay: 500 },
+                { id: 6, msg: 'Calculando scores...', delay: 800 },
+                { id: 7, msg: 'Gerando relatorio...', delay: 1000 }
             ];
 
-            try {
-                for (const s of steps) {
-                    setStep(s.num, 'active');
-                    statusMessage.textContent = s.msg;
-                    await new Promise(r => setTimeout(r, 400));
-                }
+            let stepIndex = 0;
 
+            const showStep = (index, state) => {
+                const el = document.getElementById('step' + steps[index].id);
+                if (el) {
+                    el.className = 'step-indicator ' + state;
+                }
+            };
+
+            const animate = () => {
+                return new Promise((resolve) => {
+                    if (stepIndex >= steps.length) {
+                        resolve();
+                        return;
+                    }
+
+                    showStep(stepIndex, 'active');
+                    statusMessage.textContent = steps[stepIndex].msg;
+
+                    setTimeout(() => {
+                        showStep(stepIndex, 'done');
+                        stepIndex++;
+                        resolve();
+                    }, steps[stepIndex].delay);
+                });
+            };
+
+            const runAnimation = async () => {
+                for (let i = 0; i < steps.length; i++) {
+                    await animate();
+                }
+            };
+
+            runAnimation();
+
+            try {
                 const response = await fetch(API_BASE + '/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -243,11 +253,12 @@
                     throw new Error(data.details || data.error || 'Erro na analise');
                 }
 
-                for (let i = 1; i <= 4; i++) setStep(i, 'done');
-
+                for (let i = 1; i <= 7; i++) {
+                    setStep(i, 'done');
+                }
+                statusMessage.textContent = 'Analise concluida!';
                 showStatus(statusSuccess);
                 viewReport.href = API_BASE + '/reports/' + data.filename;
-
                 if (data.scores) renderScoreBars(data.scores);
 
             } catch (error) {
@@ -275,8 +286,6 @@
             urlInput.focus();
         });
 
-        checkServer();
-        setInterval(checkServer, 30000);
         urlInput.focus();
     </script>
 </body>

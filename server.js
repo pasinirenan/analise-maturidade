@@ -65,12 +65,46 @@ app.get('/api/status', (req, res) => {
     });
 });
 
+const analysisProgress = new Map();
+
+app.get('/api/progress/:analysisId', (req, res) => {
+    const { analysisId } = req.params;
+    
+    const progress = analysisProgress.get(analysisId);
+    
+    if (!progress) {
+        console.log(`[Progress] ID ${analysisId} nao encontrado`);
+        return res.json({ steps: {}, completed: false });
+    }
+
+    console.log(`[Progress] Enviando progresso para ${analysisId}:`, JSON.stringify(progress.steps));
+    res.json(progress);
+});
+
 app.post('/api/analyze', async (req, res) => {
     const { url } = req.body;
     
     if (!url) {
         return res.status(400).json({ error: 'URL é obrigatória' });
     }
+
+    const analysisId = Date.now().toString();
+
+    const progress = {
+        steps: {
+            1: { status: 'active', message: 'Buscando site...' },
+            2: { status: 'pending', message: 'Analisando conteudo...' },
+            3: { status: 'pending', message: 'Raspando paginas internas...' },
+            4: { status: 'pending', message: 'Analisando redes sociais...' },
+            5: { status: 'pending', message: 'Classificando setor...' },
+            6: { status: 'pending', message: 'Calculando scores...' },
+            7: { status: 'pending', message: 'Gerando relatorio HTML...' }
+        },
+        completed: false,
+        currentStep: 1
+    };
+
+    analysisProgress.set(analysisId, progress);
 
     try {
         let normalizedUrl = url.trim();
@@ -88,7 +122,19 @@ app.post('/api/analyze', async (req, res) => {
             console.log(`[${new Date().toLocaleTimeString()}] Usando LLM: ${llmConfig.provider.toUpperCase()} (${llmConfig.model})`);
         }
 
-        const result = await analyzeSite(normalizedUrl, llmConfig);
+        const updateStep = (stepNum, status, message) => {
+            progress.steps[stepNum] = { status, message };
+            progress.currentStep = stepNum;
+            console.log(`[Progress] Step ${stepNum}: ${status} - ${message}`);
+            if (status === 'done' && stepNum < 7) {
+                progress.steps[stepNum + 1] = { status: 'active', message: progress.steps[stepNum + 1]?.message || '' };
+                progress.currentStep = stepNum + 1;
+            }
+        };
+
+        const result = await analyzeSite(normalizedUrl, llmConfig, { updateStep });
+
+        updateStep(7, 'done', 'Relatorio gerado com sucesso!');
         
         const timestamp = Date.now();
         const filename = `relatorio-${timestamp}.html`;
@@ -96,11 +142,25 @@ app.post('/api/analyze', async (req, res) => {
 
         fs.writeFileSync(filepath, result.html);
         
+        progress.completed = true;
+        progress.result = {
+            success: true,
+            filename: filename,
+            url: normalizedUrl,
+            scores: result.llmResult.scores,
+            maturity: result.llmResult.maturidade,
+            using_llm: isLLMEnabled(),
+            provider: getProviderName(),
+        };
+
         console.log(`[${new Date().toLocaleTimeString()}] Relatório gerado: ${filename}`);
         console.log(`[${new Date().toLocaleTimeString()}] Score: ${result.llmResult.scores.finalScore}/100`);
 
         res.json({ 
             success: true,
+            analysisId,
+            steps: progress.steps,
+            completed: true,
             filename: filename,
             url: normalizedUrl,
             scores: result.llmResult.scores,
@@ -111,6 +171,11 @@ app.post('/api/analyze', async (req, res) => {
 
     } catch (error) {
         console.error(`[${new Date().toLocaleTimeString()}] Erro:`, error.message);
+        const progress = analysisProgress.get(analysisId);
+        if (progress) {
+            progress.completed = true;
+            progress.error = error.message;
+        }
         res.status(500).json({ 
             error: 'Erro ao analisar site',
             details: error.message 
