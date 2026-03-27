@@ -2168,6 +2168,17 @@ function generateHTMLReport(result, analysis) {
         .gap-high { color: var(--danger); font-weight: 600; }
         .gap-medium { color: var(--warning); font-weight: 600; }
         .gap-good { color: var(--success); font-weight: 600; }
+        .email-btn { display: inline-block; background: var(--success); color: white; padding: 10px 25px; border-radius: 25px; text-decoration: none; font-weight: 600; margin-top: 15px; cursor: pointer; border: none; font-size: 0.95rem; }
+        .email-btn:hover { background: #228b75; }
+        .email-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+        .email-modal.active { display: flex; }
+        .email-modal-content { background: white; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; }
+        .email-modal-content h3 { color: var(--primary); margin-bottom: 20px; }
+        .email-modal-content input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; margin-bottom: 15px; font-size: 1rem; }
+        .email-modal-content button { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn-send { background: var(--success); color: white; }
+        .btn-cancel { background: #e0e0e0; color: #333; margin-left: 10px; }
+        .email-status { margin-top: 15px; text-align: center; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -2178,8 +2189,69 @@ function generateHTMLReport(result, analysis) {
         <div class="score-badge">${result.scores.finalScore}/100</div>
         <br>
         <div class="level-badge">NÍVEL ${result.maturidade.level} - ${result.maturidade.name}</div>
-        ${result.using_llm ? '<br><div class="llm-badge">Análise com IA</div>' : ''}
+        <br><br>
+        <button class="email-btn" onclick="openEmailModal()">📧 Enviar Relatório por Email</button>
     </header>
+    
+    <div class="email-modal" id="emailModal">
+        <div class="email-modal-content">
+            <h3>Enviar Relatório por Email</h3>
+            <input type="email" id="emailInput" placeholder="Digite seu email" required>
+            <div>
+                <button class="btn-send" onclick="sendReport()">Enviar</button>
+                <button class="btn-cancel" onclick="closeEmailModal()">Cancelar</button>
+            </div>
+            <div class="email-status" id="emailStatus"></div>
+        </div>
+    </div>
+    
+    <script>
+        function openEmailModal() {
+            document.getElementById('emailModal').classList.add('active');
+            document.getElementById('emailInput').focus();
+        }
+        function closeEmailModal() {
+            document.getElementById('emailModal').classList.remove('active');
+            document.getElementById('emailStatus').textContent = '';
+        }
+        async function sendReport() {
+            const email = document.getElementById('emailInput').value;
+            const status = document.getElementById('emailStatus');
+            if (!email || !email.includes('@')) {
+                status.textContent = 'Email inválido';
+                status.style.color = '#e76f51';
+                return;
+            }
+            status.textContent = 'Enviando...';
+            status.style.color = '#1e3a5f';
+            try {
+                const response = await fetch('/api/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: email,
+                        reportHtml: document.documentElement.outerHTML,
+                        companyName: '${result.empresa}'
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    status.textContent = 'Email enviado com sucesso!';
+                    status.style.color = '#2a9d8f';
+                    setTimeout(closeEmailModal, 2000);
+                } else {
+                    status.textContent = 'Erro: ' + (data.error || 'Tente novamente');
+                    status.style.color = '#e76f51';
+                }
+            } catch (e) {
+                status.textContent = 'Erro de conexão';
+                status.style.color = '#e76f51';
+            }
+        }
+        document.getElementById('emailModal').addEventListener('click', function(e) {
+            if (e.target === this) closeEmailModal();
+        });
+    </script>
 
     <main class="container">
         <section class="card">
