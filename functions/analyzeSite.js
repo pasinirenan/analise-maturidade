@@ -220,6 +220,248 @@ function detectTechOnPage(html) {
   return tech;
 }
 
+function extractCompanySlug(url) {
+  try {
+    const hostname = new URL(url).hostname;
+    let slug = hostname.replace('www.', '').split('.')[0];
+    slug = slug.replace(/-/g, '').replace(/_/g, '');
+    return slug;
+  } catch {
+    return null;
+  }
+}
+
+async function analyzeSocialMedia(socialLinks, companySlug) {
+  const results = {
+    linkedin: null,
+    instagram: null,
+    facebook: null,
+    youtube: null,
+    twitter: null,
+  };
+
+  const linkedInUrl = socialLinks.linkedin || (companySlug ? `https://www.linkedin.com/company/${companySlug}` : null);
+  const instagramUrl = socialLinks.instagram || (companySlug ? `https://www.instagram.com/${companySlug}` : null);
+  const facebookUrl = socialLinks.facebook || (companySlug ? `https://www.facebook.com/${companySlug}` : null);
+  const youtubeUrl = socialLinks.youtube || (companySlug ? `https://www.youtube.com/@${companySlug}` : null);
+  const twitterUrl = socialLinks.twitter || (companySlug ? `https://x.com/${companySlug}` : null);
+
+  async function fetchLinkedIn(url) {
+    if (!url) return null;
+    const html = await fetchSite(url, 10000);
+    if (!html) return null;
+    
+    const $ = cheerio.load(html);
+    const text = html;
+    
+    const followersMatch = text.match(/([\d.,]+)\s*(?:seguidores|followers)/i) || 
+                          text.match(/(\d+[\d.,]*)\s*followers/i);
+    
+    const employeesMatch = text.match(/(\d+[\d.,]*)\s*(?:funcionários|employees)/i);
+    
+    const industryMatch = text.match(/Setor[:\s]+([^\n<]+)/i) || 
+                         text.match(/Industry[:\s]+([^\n<]+)/i);
+    
+    const sizeMatch = text.match(/Número de funcionários[:\s]+([^\n<]+)/i) ||
+                     text.match(/Company size[:\s]+([^\n<]+)/i);
+    
+    const aboutMatch = $('section[id="about"]').text().trim() ||
+                      $('p[data-test-id="about-us-description"]').text().trim() ||
+                      $('meta[name="description"]').attr('content') || '';
+    
+    const hasAboutSection = aboutMatch.length > 50;
+    const hasPosts = /publicações|posts|updates/i.test(text);
+    
+    return {
+      url,
+      found: true,
+      followers: followersMatch ? followersMatch[1] : null,
+      employees: employeesMatch ? employeesMatch[1] : null,
+      industry: industryMatch ? industryMatch[1].trim() : null,
+      companySize: sizeMatch ? sizeMatch[1].trim() : null,
+      hasAbout: hasAboutSection,
+      hasPosts,
+      description: aboutMatch.substring(0, 500),
+    };
+  }
+
+  async function fetchInstagram(url) {
+    if (!url) return null;
+    const html = await fetchSite(url, 10000);
+    if (!html) return null;
+    
+    const $ = cheerio.load(html);
+    const text = html;
+    
+    const followersMatch = text.match(/"edge_followed_by":\s*\{"count":\s*(\d+)/) ||
+                          text.match(/"followers":\s*(\d+)/);
+    
+    const postsMatch = text.match(/"edge_owner_to_timeline_media":\s*\{"count":\s*(\d+)/) ||
+                       text.match(/"media_count":\s*(\d+)/);
+    
+    const followingMatch = text.match(/"edge_follow":\s*\{"count":\s*(\d+)/);
+    
+    const fullName = $('meta[property="og:title"]').attr('content') ||
+                   $('title').text().trim();
+    
+    const bioMatch = $('meta[name="description"]').attr('content') ||
+                    text.match(/"biography":"([^"]+)"/);
+    
+    return {
+      url,
+      found: true,
+      followers: followersMatch ? parseInt(followersMatch[1]).toLocaleString() : null,
+      posts: postsMatch ? postsMatch[1] : null,
+      following: followingMatch ? followingMatch[1] : null,
+      name: fullName,
+      bio: bioMatch ? bioMatch[1].replace(/\\n/g, ' ').substring(0, 300) : null,
+    };
+  }
+
+  async function fetchFacebook(url) {
+    if (!url) return null;
+    const html = await fetchSite(url, 10000);
+    if (!html) return null;
+    
+    const $ = cheerio.load(html);
+    const text = html;
+    
+    const likesMatch = text.match(/"page_liked":\s*(\d+)/) ||
+                     text.match(/(\d+[\d.,]*)\s*(?:curtidas|likes)/i) ||
+                     text.match(/"like_count":\s*(\d+)/);
+    
+    const talkingMatch = text.match(/(\d+[\d.,]*)\s*(?:falando sobre isso|talking about)/i) ||
+                        text.match(/"talk_about_count":\s*(\d+)/);
+    
+    const pageName = $('meta[property="og:title"]').attr('content') ||
+                    $('title').text().trim();
+    
+    const aboutMatch = $('meta[name="description"]').attr('content') ||
+                      text.match(/"about":"([^"]+)"/);
+    
+    const categoryMatch = text.match(/"category":"([^"]+)"/);
+    
+    return {
+      url,
+      found: true,
+      likes: likesMatch ? parseInt(likesMatch[1]).toLocaleString() : null,
+      talkingAbout: talkingMatch ? talkingMatch[1] : null,
+      name: pageName,
+      about: aboutMatch ? aboutMatch[1].replace(/\\n/g, ' ').substring(0, 300) : null,
+      category: categoryMatch ? categoryMatch[1] : null,
+    };
+  }
+
+  async function fetchYouTube(url) {
+    if (!url) return null;
+    const html = await fetchSite(url, 10000);
+    if (!html) return null;
+    
+    const $ = cheerio.load(html);
+    const text = html;
+    
+    const subscribersMatch = text.match(/"subscriberCountText":\s*\{"runs":\s*\[\{"text":\s*"([^"]+)"/) ||
+                          text.match(/(\d+[\d.,]*[KMB]?)\s*(?:inscritos|subscribers)/i) ||
+                          text.match(/"subscribers":"([^"]+)"/);
+    
+    const videosMatch = text.match(/"videoCountText":\s*\{"runs":\s*\[\{"text":\s*"([^"]+)"/) ||
+                        text.match(/(\d+)\s*(?:vídeos|videos)/i);
+    
+    const channelName = $('meta[property="og:title"]').attr('content') ||
+                       $('title').text().trim();
+    
+    const descriptionMatch = $('meta[name="description"]').attr('content');
+    
+    const viewCountMatch = text.match(/(\d+[\d.,]*)\s*(?:visualizações|views)/i);
+    
+    return {
+      url,
+      found: true,
+      subscribers: subscribersMatch ? subscribersMatch[1] : null,
+      videos: videosMatch ? videosMatch[1] : null,
+      channelName,
+      description: descriptionMatch ? descriptionMatch.substring(0, 300) : null,
+      viewCount: viewCountMatch ? viewCountMatch[1] : null,
+    };
+  }
+
+  async function fetchTwitter(url) {
+    if (!url) return null;
+    const html = await fetchSite(url, 10000);
+    if (!html) return null;
+    
+    const $ = cheerio.load(html);
+    const text = html;
+    
+    const followersMatch = text.match(/"followers_count":\s*(\d+)/) ||
+                         text.match(/(\d+[\d.,]*)\s*(?:seguidores|followers)/i);
+    
+    const followingMatch = text.match(/"following_count":\s*(\d+)/) ||
+                         text.match(/(\d+)\s*(?:seguindo|following)/i);
+    
+    const tweetsMatch = text.match(/"statuses_count":\s*(\d+)/) ||
+                       text.match(/(\d+)\s*(?:tweets|posts)/i);
+    
+    const accountName = $('meta[property="og:title"]').attr('content') ||
+                      $('title').text().trim();
+    
+    const bioMatch = $('meta[name="description"]').attr('content');
+    
+    return {
+      url,
+      found: true,
+      followers: followersMatch ? parseInt(followersMatch[1]).toLocaleString() : null,
+      following: followingMatch ? followingMatch[1] : null,
+      tweets: tweetsMatch ? tweetsMatch[1] : null,
+      name: accountName,
+      bio: bioMatch ? bioMatch.substring(0, 300) : null,
+    };
+  }
+
+  const fetchPromises = [
+    fetchLinkedIn(linkedInUrl).then(r => { results.linkedin = r; }),
+    fetchInstagram(instagramUrl).then(r => { results.instagram = r; }),
+    fetchFacebook(facebookUrl).then(r => { results.facebook = r; }),
+    fetchYouTube(youtubeUrl).then(r => { results.youtube = r; }),
+    fetchTwitter(twitterUrl).then(r => { results.twitter = r; }),
+  ];
+
+  await Promise.allSettled(fetchPromises);
+  
+  const activeProfiles = Object.values(results).filter(r => r && r.found).length;
+  results.summary = {
+    activeProfiles,
+    hasLinkedIn: !!results.linkedin,
+    hasInstagram: !!results.instagram,
+    hasFacebook: !!results.facebook,
+    hasYouTube: !!results.youtube,
+    hasTwitter: !!results.twitter,
+    totalFollowers: calculateTotalFollowers(results),
+  };
+
+  return results;
+}
+
+function calculateTotalFollowers(social) {
+  let total = 0;
+  
+  const extractNumber = (str) => {
+    if (!str) return 0;
+    const cleaned = str.replace(/[.,KMB]/gi, '');
+    if (/K/i.test(str)) return parseInt(cleaned) * 1000;
+    if (/M/i.test(str)) return parseInt(cleaned) * 1000000;
+    if (/B/i.test(str)) return parseInt(cleaned) * 1000000000;
+    return parseInt(cleaned) || 0;
+  };
+
+  if (social.linkedin?.followers) total += extractNumber(social.linkedin.followers);
+  if (social.instagram?.followers) total += extractNumber(social.instagram.followers);
+  if (social.facebook?.likes) total += extractNumber(social.facebook.likes);
+  if (social.twitter?.followers) total += extractNumber(social.twitter.followers);
+
+  return total > 0 ? total.toLocaleString() : null;
+}
+
 function extractCompanyName(url) {
   try {
     const hostname = new URL(url).hostname;
@@ -380,13 +622,6 @@ function formatAnalysisForLLM(analysis) {
     .map(([cat, terms]) => `  - ${cat}: ${terms.join(', ')}`)
     .join('\n');
 
-  const inferredProfiles = `
-  - LinkedIn Company: https://linkedin.com/company/${companySlug}
-  - Instagram: https://instagram.com/${companySlug}
-  - Facebook: https://facebook.com/${companySlug}
-  - YouTube: https://youtube.com/@${companySlug}
-  - Twitter/X: https://x.com/${companySlug}`;
-
   const internalPagesData = analysis.internalPages ? Object.entries(analysis.internalPages).map(([path, data]) => {
     const contactInfo = data.email || data.phone || data.address ? `
     - Contato: ${[data.email, data.phone, data.address].filter(Boolean).join(', ')}` : '';
@@ -395,6 +630,8 @@ function formatAnalysisForLLM(analysis) {
     const innovationInfo = data.innovationKeywords && data.innovationKeywords.length > 0 ? `\n    - Inovação: ${data.innovationKeywords.map(i => i.category).join(', ')}` : '';
     return `- ${path}: ${data.wordCount} palavras${contactInfo}${formInfo}${techInfo}${innovationInfo}`;
   }).join('\n') : '';
+
+  const socialMediaData = analysis.socialMedia ? formatSocialMediaData(analysis.socialMedia) : '';
 
   return `
 # DADOS COLETADOS DO SITE
@@ -405,7 +642,6 @@ function formatAnalysisForLLM(analysis) {
 - **Descrição Meta**: ${analysis.description || 'Não encontrada'}
 - **HTTPS**: ${analysis.hasHttps ? 'Sim' : 'Não'}
 - **Palavras-chave**: ${analysis.keywords || 'Não definidas'}
-- **Slug para redes sociais**: ${companySlug}
 
 ## Conteúdo e Estrutura (Homepage)
 - **Palavras no site**: ${analysis.wordCount.toLocaleString()}
@@ -425,11 +661,8 @@ ${internalPagesData || '  - Nenhuma página interna encontrada ou acessível'}
 - **Privacidade/LGPD**: ${analysis.hasPrivacy ? 'Sim' : 'Não'}
 - **E-commerce/Loja**: ${analysis.forms > 2 ? 'Possível' : 'Não identificado'}
 
-## Redes Sociais Identificadas no Site
-${socialLinksList || '  - Nenhuma rede social evidenciada explicitamente'}
-
-## Perfis de Redes Sociais para Verificação (inferidos pelo slug da empresa)
-${inferredProfiles}
+## Redes Sociais - Análise Detalhada
+${socialMediaData || '  - Não foi possível analisar redes sociais'}
 
 ## Tecnologias Detectadas (Homepage)
 ${techList || '  - Não foram identificadas tecnologias específicas'}
@@ -446,6 +679,60 @@ ${analysis.headings.slice(0, 8).map(h => `  - ${h}`).join('\n')}
 ## Trecho do Conteúdo Principal
 ${analysis.mainContent.substring(0, 1500)}
 `;
+}
+
+function formatSocialMediaData(social) {
+  if (!social || !social.summary) return '  - Dados não disponíveis';
+  
+  const lines = [];
+  lines.push(`**Perfis Ativos**: ${social.summary.activeProfiles}`);
+  lines.push('');
+  
+  if (social.linkedin) {
+    lines.push(`### LinkedIn`);
+    lines.push(`  - URL: ${social.linkedin.url}`);
+    lines.push(`  - Seguidores: ${social.linkedin.followers || 'Não disponível'}`);
+    lines.push(`  - Funcionários: ${social.linkedin.employees || 'Não disponível'}`);
+    lines.push(`  - Setor: ${social.linkedin.industry || 'Não disponível'}`);
+    lines.push(`  - Porte: ${social.linkedin.companySize || 'Não disponível'}`);
+    lines.push(`  - Seção About: ${social.linkedin.hasAbout ? 'Sim' : 'Não'}`);
+    lines.push('');
+  }
+  
+  if (social.instagram) {
+    lines.push(`### Instagram`);
+    lines.push(`  - URL: ${social.instagram.url}`);
+    lines.push(`  - Seguidores: ${social.instagram.followers || 'Não disponível'}`);
+    lines.push(`  - Posts: ${social.instagram.posts || 'Não disponível'}`);
+    lines.push(`  - Bio: ${social.instagram.bio ? social.instagram.bio.substring(0, 100) + '...' : 'Não disponível'}`);
+    lines.push('');
+  }
+  
+  if (social.facebook) {
+    lines.push(`### Facebook`);
+    lines.push(`  - URL: ${social.facebook.url}`);
+    lines.push(`  - Curtidas: ${social.facebook.likes || 'Não disponível'}`);
+    lines.push(`  - Categoria: ${social.facebook.category || 'Não disponível'}`);
+    lines.push('');
+  }
+  
+  if (social.youtube) {
+    lines.push(`### YouTube`);
+    lines.push(`  - URL: ${social.youtube.url}`);
+    lines.push(`  - Inscritos: ${social.youtube.subscribers || 'Não disponível'}`);
+    lines.push(`  - Vídeos: ${social.youtube.videos || 'Não disponível'}`);
+    lines.push('');
+  }
+  
+  if (social.twitter) {
+    lines.push(`### Twitter/X`);
+    lines.push(`  - URL: ${social.twitter.url}`);
+    lines.push(`  - Seguidores: ${social.twitter.followers || 'Não disponível'}`);
+    lines.push(`  - Tweets: ${social.twitter.tweets || 'Não disponível'}`);
+    lines.push('');
+  }
+  
+  return lines.join('\n');
 }
 
 async function analyzeWithLLM(analysis, config) {
@@ -647,6 +934,14 @@ async function analyzeSite(url, llmConfig = null) {
     console.log(`Páginas internas analisadas: ${Object.keys(internalPages).length}`);
   }
   
+  console.log(`Analisando redes sociais...`);
+  const companySlug = extractCompanySlug(url);
+  const socialMedia = await analyzeSocialMedia(analysis.socialLinks, companySlug);
+  analysis.socialMedia = socialMedia;
+  
+  const activeSocials = socialMedia.summary?.activeProfiles || 0;
+  console.log(`Redes sociais ativas encontradas: ${activeSocials}`);
+  
   if (llmConfig && llmConfig.apiKey) {
     console.log(`Usando LLM (${llmConfig.provider}) para análise avançada...`);
     const llmResult = await analyzeWithLLM(analysis, llmConfig);
@@ -795,6 +1090,18 @@ function generateHTMLReport(result, analysis) {
         .page-item h4 { color: var(--primary); font-size: 1rem; margin-bottom: 10px; font-family: monospace; }
         .page-item p { margin: 5px 0; font-size: 0.85rem; color: var(--gray); }
         .page-item strong { color: var(--dark); }
+        .social-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+        .social-item { background: var(--light); padding: 15px; border-radius: 8px; text-align: center; border-top: 4px solid var(--secondary); }
+        .social-item.linkedin { border-top-color: #0077b5; }
+        .social-item.instagram { border-top-color: #e1306c; }
+        .social-item.facebook { border-top-color: #1877f2; }
+        .social-item.youtube { border-top-color: #ff0000; }
+        .social-item.twitter { border-top-color: #1da1f2; }
+        .social-icon { font-size: 2rem; margin-bottom: 10px; }
+        .social-name { font-weight: 600; color: var(--primary); margin-bottom: 5px; }
+        .social-stat { font-size: 1.2rem; font-weight: 700; color: var(--dark); }
+        .social-label { font-size: 0.8rem; color: var(--gray); }
+        .social-item.inactive { opacity: 0.5; }
     </style>
 </head>
 <body>
@@ -846,6 +1153,64 @@ function generateHTMLReport(result, analysis) {
                     </div>
                 `).join('')}
             </div>
+        </section>
+        ` : ''}
+
+        ${analysis.socialMedia && analysis.socialMedia.summary && analysis.socialMedia.summary.activeProfiles > 0 ? `
+        <section class="card">
+            <h2>Redes Sociais Analisadas</h2>
+            <p style="margin-bottom: 15px; color: var(--gray);">Perfis ativos encontrados: <strong>${analysis.socialMedia.summary.activeProfiles}</strong></p>
+            <div class="social-grid">
+                ${analysis.socialMedia.linkedin ? `
+                    <div class="social-item linkedin">
+                        <div class="social-icon">🔗</div>
+                        <div class="social-name">LinkedIn</div>
+                        <div class="social-stat">${analysis.socialMedia.linkedin.followers || 'N/D'}</div>
+                        <div class="social-label">seguidores</div>
+                        ${analysis.socialMedia.linkedin.employees ? `<div style="margin-top: 5px; font-size: 0.8rem; color: var(--gray);">${analysis.socialMedia.linkedin.employees} funcionários</div>` : ''}
+                    </div>
+                ` : ''}
+                ${analysis.socialMedia.instagram ? `
+                    <div class="social-item instagram">
+                        <div class="social-icon">📸</div>
+                        <div class="social-name">Instagram</div>
+                        <div class="social-stat">${analysis.socialMedia.instagram.followers || 'N/D'}</div>
+                        <div class="social-label">seguidores</div>
+                        ${analysis.socialMedia.instagram.posts ? `<div style="margin-top: 5px; font-size: 0.8rem; color: var(--gray);">${analysis.socialMedia.instagram.posts} posts</div>` : ''}
+                    </div>
+                ` : ''}
+                ${analysis.socialMedia.youtube ? `
+                    <div class="social-item youtube">
+                        <div class="social-icon">▶️</div>
+                        <div class="social-name">YouTube</div>
+                        <div class="social-stat">${analysis.socialMedia.youtube.subscribers || 'N/D'}</div>
+                        <div class="social-label">inscritos</div>
+                        ${analysis.socialMedia.youtube.videos ? `<div style="margin-top: 5px; font-size: 0.8rem; color: var(--gray);">${analysis.socialMedia.youtube.videos} vídeos</div>` : ''}
+                    </div>
+                ` : ''}
+                ${analysis.socialMedia.facebook ? `
+                    <div class="social-item facebook">
+                        <div class="social-icon">👍</div>
+                        <div class="social-name">Facebook</div>
+                        <div class="social-stat">${analysis.socialMedia.facebook.likes || 'N/D'}</div>
+                        <div class="social-label">curtidas</div>
+                    </div>
+                ` : ''}
+                ${analysis.socialMedia.twitter ? `
+                    <div class="social-item twitter">
+                        <div class="social-icon">🐦</div>
+                        <div class="social-name">Twitter/X</div>
+                        <div class="social-stat">${analysis.socialMedia.twitter.followers || 'N/D'}</div>
+                        <div class="social-label">seguidores</div>
+                    </div>
+                ` : ''}
+            </div>
+            ${analysis.socialMedia.linkedin && analysis.socialMedia.linkedin.industry ? `
+            <div style="margin-top: 15px; padding: 10px; background: var(--light); border-radius: 8px;">
+                <strong>Setor identificado:</strong> ${analysis.socialMedia.linkedin.industry}
+                ${analysis.socialMedia.linkedin.companySize ? ` • <strong>Porte:</strong> ${analysis.socialMedia.linkedin.companySize}` : ''}
+            </div>
+            ` : ''}
         </section>
         ` : ''}
 

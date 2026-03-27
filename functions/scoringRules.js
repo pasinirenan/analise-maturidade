@@ -21,6 +21,29 @@ function calculateScores(analysis) {
   const activeSocials = Object.values(analysis.socialLinks).filter(Boolean).length;
   socialMedia += activeSocials * 12;
   if (analysis.hasPrivacy) socialMedia += 5;
+  
+  if (analysis.socialMedia && analysis.socialMedia.summary) {
+    const smSummary = analysis.socialMedia.summary;
+    const activeProfiles = smSummary.activeProfiles || 0;
+    socialMedia += activeProfiles * 5;
+    
+    if (smSummary.hasLinkedIn) {
+      socialMedia += 10;
+      if (analysis.socialMedia.linkedin?.followers) socialMedia += 5;
+      if (analysis.socialMedia.linkedin?.employees) socialMedia += 5;
+    }
+    if (smSummary.hasInstagram) {
+      socialMedia += 8;
+      if (analysis.socialMedia.instagram?.followers) socialMedia += 3;
+    }
+    if (smSummary.hasYouTube) {
+      socialMedia += 8;
+      if (analysis.socialMedia.youtube?.subscribers) socialMedia += 3;
+    }
+    if (smSummary.hasFacebook) socialMedia += 5;
+    if (smSummary.hasTwitter) socialMedia += 5;
+  }
+  
   socialMedia = Math.min(100, socialMedia);
 
   let cultureInnovation = 30;
@@ -144,6 +167,47 @@ function getForcesAndGaps(analysis, scores) {
 
   const activeSocials = Object.values(analysis.socialLinks).filter(Boolean).length;
   if (activeSocials < 2) gaps.push('Presença limitada em redes sociais');
+  
+  if (analysis.socialMedia && analysis.socialMedia.summary) {
+    const sm = analysis.socialMedia;
+    
+    if (sm.linkedin) {
+      if (sm.linkedin.followers) {
+        forces.push(`LinkedIn com ${sm.linkedin.followers} seguidores`);
+      }
+      if (sm.linkedin.employees) {
+        forces.push(`LinkedIn indica ${sm.linkedin.employees} funcionários`);
+      }
+      if (sm.linkedin.hasAbout) {
+        forces.push('LinkedIn com seção About completa');
+      }
+    }
+    
+    if (sm.instagram) {
+      if (sm.instagram.followers) {
+        forces.push(`Instagram com ${sm.instagram.followers} seguidores`);
+      }
+    }
+    
+    if (sm.youtube) {
+      if (sm.youtube.subscribers) {
+        forces.push(`YouTube com ${sm.youtube.subscribers} inscritos`);
+      }
+      if (sm.youtube.videos) {
+        forces.push(`YouTube com ${sm.youtube.videos} vídeos`);
+      }
+    }
+    
+    if (sm.facebook && sm.facebook.likes) {
+      forces.push(`Facebook com ${sm.facebook.likes} curtidas`);
+    }
+    
+    if (sm.summary.activeProfiles >= 4) {
+      forces.push('Presença omnichannel consolidada');
+    } else if (sm.summary.activeProfiles < 2) {
+      gaps.push('Redes sociais com pouca presença');
+    }
+  }
 
   if (Object.keys(analysis.innovationKeywords).length > 0) {
     forces.push('Menções a tecnologias inovadoras');
@@ -221,6 +285,26 @@ function getMainFindings(analysis, scores) {
     const pagesWithContact = Object.values(pages).filter(p => p.email || p.phone || p.address);
     if (pagesWithContact.length > 0) {
       findings.push({ title: 'Canais de contato identificados', description: `${pagesWithContact.length} página(s) com informações de contato visíveis.` });
+    }
+  }
+  
+  if (analysis.socialMedia && analysis.socialMedia.summary) {
+    const sm = analysis.socialMedia;
+    
+    if (sm.summary.activeProfiles >= 4) {
+      findings.push({ title: 'Presença omnichannel consolidada', description: `Atuação em ${sm.summary.activeProfiles} plataformas digitais (LinkedIn, Instagram, YouTube, Facebook, Twitter).` });
+    }
+    
+    if (sm.linkedin && sm.linkedin.employees) {
+      findings.push({ title: 'Perfil corporativo identificado', description: `LinkedIn indica empresa com aproximadamente ${sm.linkedin.employees} funcionários e presença no setor de ${sm.linkedin.industry || 'não especificado'}.` });
+    }
+    
+    if (sm.youtube && sm.youtube.subscribers) {
+      findings.push({ title: 'Canal de vídeos ativo', description: `YouTube com ${sm.youtube.subscribers} inscritos e ${sm.youtube.videos || 'vários'} vídeos publicados.` });
+    }
+    
+    if (sm.instagram && sm.instagram.followers) {
+      findings.push({ title: 'Presença visual no Instagram', description: `Instagram com ${sm.instagram.followers} seguidores demonstra estratégia de conteúdo visual.` });
     }
   }
 
