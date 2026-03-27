@@ -216,6 +216,78 @@ app.get('/api/reports', (req, res) => {
     res.json({ reports: files.slice(0, 20) });
 });
 
+app.post('/api/send-email', async (req, res) => {
+    const { email, reportHtml, companyName } = req.body;
+    
+    if (!email || !reportHtml) {
+        return res.status(400).json({ error: 'Email e relatório são obrigatórios' });
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Email inválido' });
+    }
+    
+    try {
+        const nodemailer = require('nodemailer');
+        const htmlPdf = require('html-pdf-node');
+        
+        const pdfBuffer = await htmlPdf.file({
+            content: reportHtml,
+            name: `relatorio-${companyName || 'analise'}.pdf`,
+            format: 'A4',
+            printOptions: {
+                margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' }
+            }
+        }).toBuffer();
+        
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+        
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: `Relatório de Maturidade de Inovação - ${companyName || 'Análise'}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2 style="color: #2563eb;">Relatório de Maturidade de Inovação</h2>
+                    <p>Olá,</p>
+                    <p>Segue em anexo o relatório de maturidade de inovação para <strong>${companyName || 'a empresa analisada'}</strong>.</p>
+                    <p>Este relatório contém:</p>
+                    <ul>
+                        <li>Análise das 5 dimensões de inovação</li>
+                        <li>Pontuação detalhada e benchmark competitivo</li>
+                        <li>Recomendações de melhoria</li>
+                        <li>Análise comparativa com o setor</li>
+                    </ul>
+                    <p>Atenciosamente,<br>Equipe IEBT Inovação</p>
+                </div>
+            `,
+            attachments: [
+                {
+                    filename: `relatorio-maturidade-${(companyName || 'analise').replace(/[^a-zA-Z0-9]/g, '-')}.pdf`,
+                    content: pdfBuffer
+                }
+            ]
+        };
+        
+        await transporter.sendMail(mailOptions);
+        
+        res.json({ success: true, message: 'Email enviado com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao enviar email:', error);
+        res.status(500).json({ 
+            error: 'Erro ao enviar email',
+            details: error.message 
+        });
+    }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`
 ╔════════════════════════════════════════════════════════════╗

@@ -67,6 +67,9 @@
         .step-desc { font-size: 0.85rem; opacity: 0.8; }
         .footer { text-align: center; margin-top: 40px; color: rgba(255,255,255,0.6); font-size: 0.85rem; }
         @media (max-width: 600px) { .hero h1 { font-size: 1.8rem; } .features, .steps-list { grid-template-columns: 1fr; } .card { padding: 25px; } .score-bars { grid-template-columns: 1fr; } }
+        .result-actions { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn-email { background: var(--success); color: white; }
+        .btn-email:hover { background: #228b75; }
     </style>
 </head>
 <body>
@@ -115,8 +118,26 @@
                 </div>
                 <div class="result-actions">
                     <a href="#" class="btn-secondary" id="viewReport" target="_blank">Ver Relatorio</a>
+                    <button class="btn-secondary" id="sendEmailBtn">Enviar por Email</button>
                     <button class="btn-secondary" id="newAnalysis">Nova Analise</button>
                 </div>
+            </div>
+        </div>
+
+        <div id="emailModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+            <div class="modal-content" style="background:white; padding:30px; border-radius:16px; max-width:400px; width:90%;">
+                <h3 style="color:var(--primary); margin-bottom:20px;">Enviar Relatorio por Email</h3>
+                <form id="emailForm">
+                    <div class="form-group">
+                        <label for="email">Seu Email</label>
+                        <input type="email" id="email" name="email" placeholder="seu@email.com" required style="width:100%; padding:12px; border:2px solid #e0e0e0; border-radius:8px; font-size:1rem;">
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button type="submit" class="btn" id="sendEmailSubmit" style="flex:1;">Enviar</button>
+                        <button type="button" id="closeModal" class="btn-secondary" style="flex:1; padding:12px;">Cancelar</button>
+                    </div>
+                </form>
+                <div id="emailStatus" style="margin-top:15px; text-align:center; display:none;"></div>
             </div>
         </div>
 
@@ -284,6 +305,82 @@
             urlInput.value = '';
             showStatus(null);
             urlInput.focus();
+        });
+
+        const emailModal = document.getElementById('emailModal');
+        const emailForm = document.getElementById('emailForm');
+        const sendEmailBtn = document.getElementById('sendEmailBtn');
+        const closeModalBtn = document.getElementById('closeModal');
+        const emailStatus = document.getElementById('emailStatus');
+        const sendEmailSubmit = document.getElementById('sendEmailSubmit');
+
+        let currentReportHtml = '';
+        let currentCompanyName = '';
+
+        sendEmailBtn.addEventListener('click', async () => {
+            emailModal.style.display = 'flex';
+            emailStatus.style.display = 'none';
+            
+            const reportUrl = viewReport.href;
+            try {
+                const response = await fetch(reportUrl);
+                currentReportHtml = await response.text();
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlValue = urlInput.value.trim();
+                currentCompanyName = urlValue.replace(/https?:\/\//, '').split('/')[0];
+            } catch (e) {
+                console.error('Erro ao carregar relatório:', e);
+            }
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            emailModal.style.display = 'none';
+        });
+
+        emailModal.addEventListener('click', (e) => {
+            if (e.target === emailModal) {
+                emailModal.style.display = 'none';
+            }
+        });
+
+        emailForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            
+            sendEmailSubmit.disabled = true;
+            sendEmailSubmit.textContent = 'Enviando...';
+            emailStatus.style.display = 'block';
+            emailStatus.innerHTML = '<span style="color: var(--primary);">Enviando email...</span>';
+            
+            try {
+                const response = await fetch(API_BASE + '/api/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: email,
+                        reportHtml: currentReportHtml,
+                        companyName: currentCompanyName
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    emailStatus.innerHTML = '<span style="color: var(--success);">Email enviado com sucesso!</span>';
+                    setTimeout(() => {
+                        emailModal.style.display = 'none';
+                        emailForm.reset();
+                    }, 2000);
+                } else {
+                    emailStatus.innerHTML = '<span style="color: var(--danger);">Erro: ' + (data.error || 'Tente novamente') + '</span>';
+                }
+            } catch (error) {
+                emailStatus.innerHTML = '<span style="color: var(--danger);">Erro ao enviar. Verifique as configuracoes.</span>';
+            }
+            
+            sendEmailSubmit.disabled = false;
+            sendEmailSubmit.textContent = 'Enviar';
         });
 
         urlInput.focus();
