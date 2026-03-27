@@ -148,5 +148,3 @@ Acessa um relatório gerado.
 Lista os últimos 20 relatórios gerados.
 
 ---
-
-Desenvolvido com BMAD Skills

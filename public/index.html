@@ -3,81 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analisador de Maturidade de Inovacao</title>
+    <title>An&aacute;lise de Maturidade de Inova&ccedil;&atilde;o</title>
+    <script>
+        (() => {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const token = params.get('token');
+                const payloadPart = token ? token.split('.')[1] : '';
+                if (!payloadPart) return;
+                const normalizedPayload = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+                const paddedPayload = normalizedPayload + '='.repeat((4 - normalizedPayload.length % 4) % 4);
+                const payload = JSON.parse(atob(paddedPayload));
+                if (payload && payload.theme === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                }
+            } catch (e) {}
+        })();
+    </script>
     <style>
         :root {
-            --primary: #1e3a5f;
-            --secondary: #2d5a87;
-            --accent: #f4a261;
-            --success: #2a9d8f;
-            --warning: #e9c46a;
-            --danger: #e76f51;
-            --light: #f8f9fa;
-            --dark: #1d3557;
-            --gray: #6c757d;
+            color-scheme: light;
+            --bg: #f9fafb; --surface: rgba(255,255,255,.9); --surface-strong: #fff; --surface-soft: #f3f4f6; --border: #e5e7eb; --border-strong: #d1d5db;
+            --text: #111827; --text-muted: #4b5563; --text-soft: #6b7280; --accent: #ea580c; --accent-hover: #c2410c;
+            --accent-soft: rgba(234,88,12,.1); --accent-ring: rgba(234,88,12,.22); --success: #0f766e; --success-soft: rgba(15,118,110,.12);
+            --warning: #d97706; --danger: #dc2626; --danger-soft: rgba(220,38,38,.1); --shadow-lg: 0 30px 70px rgba(15,23,42,.09); --shadow-md: 0 18px 42px rgba(15,23,42,.06);
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); min-height: 100vh; }
-        .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
-        .hero { text-align: center; color: white; margin-bottom: 40px; }
-        .hero h1 { font-size: 2.5rem; margin-bottom: 15px; }
-        .hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; margin: 0 auto; }
-        .card { background: white; border-radius: 16px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-        .form-group { margin-bottom: 25px; }
-        .form-group label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
+        html[data-theme="dark"] {
+            color-scheme: dark;
+            --bg: #09090b; --surface: rgba(24,24,27,.9); --surface-strong: #18181b; --surface-soft: #111827; --border: #27272a; --border-strong: #3f3f46;
+            --text: #f4f4f5; --text-muted: #d4d4d8; --text-soft: #a1a1aa; --accent: #ea580c; --accent-hover: #c2410c;
+            --accent-soft: rgba(249,115,22,.15); --accent-ring: rgba(249,115,22,.35); --success: #34d399; --success-soft: rgba(52,211,153,.12);
+            --warning: #f59e0b; --danger: #f87171; --danger-soft: rgba(248,113,113,.12); --shadow-lg: 0 32px 84px rgba(0,0,0,.42); --shadow-md: 0 18px 44px rgba(0,0,0,.28);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+        html[data-theme="dark"] * { scrollbar-color: #3f3f46 transparent; }
+        html { scroll-behavior: smooth; }
+        body {
+            min-height: 100vh; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.6; color: var(--text);
+            background: radial-gradient(circle at top center, rgba(234,88,12,.12), transparent 26%), radial-gradient(circle at 15% 15%, rgba(251,146,60,.08), transparent 22%), linear-gradient(180deg, #fff 0%, #f9fafb 45%, #eef2f7 100%);
+        }
+        html[data-theme="dark"] body { background: radial-gradient(circle at top center, rgba(249,115,22,.16), transparent 24%), radial-gradient(circle at top right, rgba(51,65,85,.26), transparent 30%), linear-gradient(180deg, #09090b 0%, #111827 100%); }
+        body::before {
+            content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .12; background-image: linear-gradient(rgba(148,163,184,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.08) 1px, transparent 1px); background-size: 44px 44px; mask-image: linear-gradient(180deg, rgba(0,0,0,.22), transparent 72%);
+        }
+        button, input, a { font: inherit; }
+        a { color: inherit; }
+        .container { max-width: 1180px; min-height: 100dvh; margin: 0 auto; padding: clamp(16px, 2.2vh, 24px) 24px 14px; display: grid; grid-template-columns: minmax(320px, .9fr) minmax(420px, 1fr); grid-template-areas: "left card"; gap: 14px 26px; align-items: start; }
+        .left-column { grid-area: left; display: flex; flex-direction: column; justify-content: center; gap: 18px; min-height: 0; height: fit-content; align-self: start; }
+        .hero { max-width: 500px; margin: 0; text-align: left; }
+        .hero h1 { font-size: clamp(1.85rem, 2.85vw, 2.65rem); line-height: 1.04; letter-spacing: -.05em; }
+        .hero p { margin-top: 12px; max-width: 450px; font-size: .96rem; color: var(--text-muted); }
+        .card, .how-it-works { border: 1px solid var(--border); border-radius: 28px; background: var(--surface); box-shadow: var(--shadow-lg); backdrop-filter: blur(18px); }
+        .card { grid-area: card; position: relative; width: 100%; margin: 0; padding: 24px; overflow: hidden; display: flex; flex-direction: column; align-self: start; }
+        .card::before {
+            content: ""; position: absolute; left: 24px; right: 24px; top: 0; height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(234,88,12,.72) 18%, rgba(234,88,12,.14) 82%, transparent 100%);
+        }
+        .card-header { display: flex; flex-direction: column; align-items: stretch; gap: 14px; margin-bottom: 16px; }
+        .card-header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+        .card-heading { margin-bottom: 0; }
+        .card-kicker { display: inline-flex; align-items: center; padding: 6px 11px; border: 1px solid rgba(234,88,12,.14); border-radius: 999px; background: rgba(234,88,12,.08); color: var(--accent); font-size: .74rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+        .card-heading h2 { margin-top: 0; max-width: 560px; font-size: clamp(1.24rem, 1.95vw, 1.5rem); line-height: 1.08; letter-spacing: -.04em; }
+        .card-heading p { margin-top: 10px; max-width: 560px; color: var(--text-muted); font-size: .89rem; line-height: 1.58; }
+        .server-status { display: inline-flex; align-items: center; gap: 10px; margin-top: 0; padding: 10px 13px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-strong); color: var(--text-muted); font-size: .82rem; font-weight: 600; box-shadow: inset 0 1px 0 rgba(255,255,255,.45); white-space: nowrap; }
+        .server-status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--warning); }
+        .server-status.connected::before { background: var(--success); box-shadow: 0 0 0 4px var(--success-soft); }
+        .server-status.disconnected::before { background: var(--danger); box-shadow: 0 0 0 4px var(--danger-soft); }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 8px; color: var(--text); font-size: .9rem; font-weight: 700; }
         .input-wrapper { position: relative; }
-        .input-wrapper input { width: 100%; padding: 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; }
+        .input-wrapper::after { content: ""; position: absolute; inset: 0; border-radius: 18px; pointer-events: none; box-shadow: 0 0 0 0 var(--accent-ring); transition: box-shadow .2s ease; }
+        .input-wrapper:focus-within::after { box-shadow: 0 0 0 4px var(--accent-ring); }
+        .input-wrapper input { width: 100%; padding: 15px 18px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface-strong); color: var(--text); font-size: .98rem; transition: border-color .2s ease, background-color .2s ease, box-shadow .2s ease; }
+        .input-wrapper input::placeholder { color: var(--text-soft); }
         .input-wrapper input:focus { outline: none; border-color: var(--accent); }
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, var(--accent) 0%, #e8914a 100%); color: white; }
-        .btn:disabled { opacity: 0.7; cursor: not-allowed; }
-        .features { margin-top: 30px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        .feature { text-align: center; padding: 15px; background: var(--light); border-radius: 10px; }
-        .feature-icon { font-size: 1.5rem; margin-bottom: 8px; }
-        .feature-text { font-size: 0.85rem; color: var(--gray); }
-        .status { margin-top: 25px; padding: 20px; border-radius: 10px; display: none; }
-        .status.loading { display: block; background: rgba(42, 157, 143, 0.1); border: 1px solid var(--success); }
-        .status.error { display: block; background: rgba(231, 111, 81, 0.1); border: 1px solid var(--danger); color: var(--danger); }
-        .status.success { display: block; background: rgba(42, 157, 143, 0.1); border: 1px solid var(--success); color: var(--success); }
-        .status h3 { margin-bottom: 10px; font-size: 1.1rem; }
-        .status p { color: var(--gray); font-size: 0.95rem; }
-        .spinner-steps { margin-top: 15px; }
-        .step-indicator { display: flex; align-items: center; gap: 10px; padding: 8px 0; color: var(--gray); font-size: 0.9rem; }
-        .step-indicator-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
-        .step-indicator.pending .step-indicator-icon { background: #e0e0e0; }
-        .step-indicator.active .step-indicator-icon { background: var(--accent); color: white; }
-        .step-indicator.done .step-indicator-icon { background: var(--success); color: white; }
-        .result-actions { margin-top: 20px; display: flex; gap: 10px; }
-        .btn-secondary { flex: 1; padding: 12px; background: var(--light); color: var(--primary); border: 2px solid var(--primary); border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none; text-align: center; }
-        .btn-secondary:hover { background: var(--primary); color: white; }
-        .score-preview { background: white; border-radius: 10px; padding: 15px; margin-top: 15px; }
-        .score-preview h4 { color: var(--primary); margin-bottom: 10px; }
-        .score-bars { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        .score-bar { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
-        .score-bar-label { min-width: 90px; color: var(--gray); }
-        .score-bar-fill { flex: 1; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; }
-        .score-bar-value { min-width: 30px; text-align: right; font-weight: 600; color: var(--primary); }
-        .how-it-works { margin-top: 40px; color: rgba(255,255,255,0.8); }
-        .how-it-works h2 { font-size: 1.3rem; margin-bottom: 15px; text-align: center; }
-        .steps-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        .step-item { text-align: center; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 10px; }
-        .step-number { width: 35px; height: 35px; background: var(--accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin: 0 auto 10px; }
-        .step-title { font-weight: 600; margin-bottom: 5px; }
-        .step-desc { font-size: 0.85rem; opacity: 0.8; }
-        .footer { text-align: center; margin-top: 40px; color: rgba(255,255,255,0.6); font-size: 0.85rem; }
-        .server-status { margin-top: 15px; padding: 10px; background: var(--light); border-radius: 8px; font-size: 0.85rem; text-align: center; }
-        .server-status.connected { color: var(--success); }
-        .server-status.disconnected { color: var(--danger); }
-        @media (max-width: 600px) { .hero h1 { font-size: 1.8rem; } .features, .steps-list { grid-template-columns: 1fr; } .card { padding: 25px; } .score-bars { grid-template-columns: 1fr; } }
+        .btn { width: 100%; padding: 15px 20px; border: none; border-radius: 18px; background: linear-gradient(180deg, #f97316 0%, var(--accent) 100%); color: #fff; font-size: .98rem; font-weight: 700; cursor: pointer; box-shadow: 0 16px 34px rgba(234,88,12,.24); transition: transform .18s ease, box-shadow .18s ease, background .18s ease, opacity .18s ease; }
+        .btn:hover { transform: translateY(-1px); background: linear-gradient(180deg, #ea580c 0%, var(--accent-hover) 100%); box-shadow: 0 18px 38px rgba(194,65,12,.22); }
+        .btn:disabled { opacity: .72; cursor: not-allowed; transform: none; box-shadow: none; }
+        .features { margin-top: 14px; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+        .feature { padding: 12px 14px; border: 1px solid var(--border); border-radius: 18px; background: linear-gradient(180deg, rgba(255,255,255,.72) 0%, rgba(249,250,251,.96) 100%); box-shadow: var(--shadow-md); display: grid; grid-template-columns: 38px 1fr; align-items: center; gap: 10px; text-align: left; }
+        html[data-theme="dark"] .feature { background: linear-gradient(180deg, rgba(39,39,42,.72) 0%, rgba(24,24,27,.96) 100%); }
+        .feature-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); font-size: 1rem; }
+        .feature-text { font-size: .85rem; font-weight: 600; color: var(--text-muted); line-height: 1.25; }
+        .status-region { position: relative; }
+        .status { display: none; margin-top: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 24px; box-shadow: var(--shadow-md); }
+        .status.loading, .status.error { position: relative; left: auto; right: auto; bottom: auto; z-index: auto; margin-top: 16px; backdrop-filter: none; }
+        .status.success { position: relative; }
+        .status.loading { background: linear-gradient(180deg, var(--accent-soft) 0%, var(--surface) 100%); border-color: rgba(234,88,12,.2); }
+        .status.error { background: linear-gradient(180deg, var(--danger-soft) 0%, var(--surface) 100%); border-color: rgba(220,38,38,.2); color: var(--danger); }
+        .status.success { background: linear-gradient(180deg, var(--success-soft) 0%, var(--surface) 100%); border-color: rgba(15,118,110,.2); color: var(--success); }
+        .status h3 { margin-bottom: 6px; color: var(--text); font-size: 1rem; line-height: 1.3; }
+        .status.error h3 { color: var(--danger); }
+        .status.success h3 { color: var(--success); }
+        .status p { color: var(--text-muted); font-size: .9rem; }
+        .spinner-steps { margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+        .step-indicator { display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--text-muted); font-size: .86rem; transition: border-color .18s ease, background-color .18s ease, transform .18s ease; }
+        .step-indicator-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: .72rem; font-weight: 700; background: var(--surface-soft); color: var(--text-muted); }
+        .step-indicator.pending .step-indicator-icon { color: var(--text-soft); }
+        .step-indicator.active { border-color: rgba(234,88,12,.24); background: var(--accent-soft); color: var(--text); transform: translateY(-1px); }
+        .step-indicator.active .step-indicator-icon { background: var(--accent); color: #fff; }
+        .step-indicator.done { border-color: rgba(15,118,110,.24); background: var(--success-soft); color: var(--text); }
+        .step-indicator.done .step-indicator-icon { background: var(--success); color: #fff; }
+        .score-preview { margin-top: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 20px; background: var(--surface-strong); }
+        .score-preview h4 { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: var(--text); font-size: .96rem; }
+        #finalScore { color: var(--accent); font-size: 1.22rem; font-weight: 800; }
+        .score-bars { margin-top: 10px; display: grid; gap: 8px; }
+        .score-bar { display: grid; grid-template-columns: minmax(106px,124px) minmax(0,1fr) auto; align-items: center; gap: 10px; font-size: .82rem; }
+        .score-bar-label { color: var(--text-muted); font-weight: 600; }
+        .score-bar-fill { height: 8px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-soft); overflow: hidden; }
+        .score-bar-value { min-width: 38px; text-align: right; color: var(--text); font-weight: 700; }
+        .result-actions { margin-top: 12px; display: flex; gap: 10px; }
+        .btn-secondary { flex: 1; padding: 11px 14px; border: 1px solid var(--border-strong); border-radius: 16px; background: var(--surface-strong); color: var(--text); font-size: .9rem; font-weight: 700; cursor: pointer; text-decoration: none; text-align: center; transition: border-color .18s ease, background-color .18s ease, color .18s ease, transform .18s ease; }
+        .btn-secondary:hover { border-color: rgba(234,88,12,.32); background: var(--accent-soft); color: var(--accent); transform: translateY(-1px); }
+        .how-it-works { margin: 0; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+        .how-it-works-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+        .how-it-works-heading { max-width: 260px; }
+        .how-it-works-kicker { display: inline-flex; align-items: center; padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(234,88,12,.14); background: rgba(234,88,12,.08); color: var(--accent); font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+        .how-it-works h2 { margin-top: 10px; font-size: 1.1rem; text-align: left; letter-spacing: -.03em; line-height: 1.08; }
+        .how-it-works-copy { max-width: 310px; color: var(--text-soft); font-size: .84rem; line-height: 1.45; text-align: right; }
+        .steps-list { position: relative; margin-top: 0; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+        .steps-list::before { content: ""; position: absolute; left: 24px; right: 24px; top: 22px; height: 1px; background: linear-gradient(90deg, rgba(234,88,12,.18), rgba(234,88,12,.05)); }
+        .step-item { position: relative; z-index: 1; min-height: 148px; padding: 14px; border: 1px solid var(--border); border-radius: 20px; background: linear-gradient(180deg, rgba(255,255,255,.82) 0%, rgba(249,250,251,.98) 100%); box-shadow: var(--shadow-md); display: flex; flex-direction: column; gap: 10px; }
+        html[data-theme="dark"] .step-item { background: linear-gradient(180deg, rgba(39,39,42,.84) 0%, rgba(24,24,27,.98) 100%); }
+        .step-number { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 11px; background: linear-gradient(180deg, #f97316 0%, var(--accent) 100%); color: #fff; font-size: .82rem; font-weight: 800; box-shadow: 0 12px 20px rgba(234,88,12,.22); }
+        .step-title { color: var(--text); font-size: .92rem; font-weight: 700; line-height: 1.15; }
+        .step-desc { color: var(--text-muted); font-size: .82rem; line-height: 1.45; }
+        :focus-visible { outline: none; }
+        button:focus-visible, a:focus-visible, input:focus-visible { box-shadow: 0 0 0 4px var(--accent-ring); }
+        ::-webkit-scrollbar { width: 12px; height: 12px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 999px; background: #cbd5e1; background-clip: padding-box; }
+        html[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #3f3f46; background-clip: padding-box; }
+        @media (max-width: 980px) {
+            .container { min-height: auto; padding-top: 28px; grid-template-columns: 1fr; grid-template-areas: "left" "card"; }
+            .left-column { max-width: 760px; margin: 0 auto; width: 100%; gap: 12px; }
+            .hero { max-width: 760px; text-align: center; margin: 0 auto; }
+            .hero p { margin-left: auto; margin-right: auto; }
+            .card { max-width: 760px; margin: 0 auto; width: 100%; }
+        }
+        @media (max-width: 720px) {
+            .container { padding: 32px 16px; }
+            .hero h1 { font-size: 1.95rem; }
+            .hero p { font-size: 1rem; }
+            .card, .how-it-works { padding: 22px; border-radius: 24px; }
+            .card::before { left: 20px; right: 20px; }
+            .how-it-works-header { flex-direction: column; align-items: flex-start; }
+            .card-header-top { flex-direction: column; align-items: flex-start; }
+            .how-it-works-copy { max-width: none; text-align: left; }
+            .steps-list::before { display: none; }
+            .server-status { margin-top: 0; white-space: normal; }
+            .status-region { position: relative; }
+            .status.loading, .status.error, .status.success { position: relative; left: auto; right: auto; bottom: auto; margin-top: 16px; backdrop-filter: none; }
+            .features, .spinner-steps, .steps-list { grid-template-columns: 1fr; }
+            .result-actions { flex-direction: column; }
+            .score-bar { grid-template-columns: 1fr; gap: 8px; }
+        }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="hero">
-            <h1>Analise de Maturidade de Inovacao</h1>
-            <p>Descubra o nivel de maturidade digital e inovacao de qualquer empresa em segundos.</p>
+        <div class="left-column">
+            <div class="hero">
+                <h1>An&aacute;lise de Maturidade de Inova&ccedil;&atilde;o</h1>
+                <p>Descubra o n&iacute;vel de maturidade digital e inova&ccedil;&atilde;o de qualquer empresa em segundos.</p>
+            </div>
+
+            <div class="how-it-works">
+                <div class="how-it-works-header">
+                    <div class="how-it-works-heading">
+                        <div class="how-it-works-kicker">Fluxo</div>
+                        <h2>Como funciona</h2>
+                    </div>
+                    <p class="how-it-works-copy">Um processo simples, contido e previs&iacute;vel para chegar ao relat&oacute;rio sem ru&iacute;do visual.</p>
+                </div>
+                <div class="steps-list">
+                    <div class="step-item"><div class="step-number">1</div><div class="step-title">Insira a URL</div><div class="step-desc">Digite o endere&ccedil;o do site</div></div>
+                    <div class="step-item"><div class="step-number">2</div><div class="step-title">An&aacute;lise autom&aacute;tica</div><div class="step-desc">Extrai e analisa dados</div></div>
+                    <div class="step-item"><div class="step-number">3</div><div class="step-title">Relat&oacute;rio</div><div class="step-desc">Receba insights</div></div>
+                </div>
+            </div>
         </div>
 
         <div class="card">
+            <div class="card-header">
+                <div class="card-header-top">
+                    <div class="card-kicker">Nova an&aacute;lise</div>
+                    <div class="server-status connected" id="serverStatus">
+                        Servidor conectado - pronto para analisar
+                    </div>
+                </div>
+        
+                <div class="card-heading">
+                    <h2>Gere o relat&oacute;rio do site com um fluxo simples</h2>
+                    <p>Insira a URL da empresa para iniciar a an&aacute;lise e receber o relat&oacute;rio de maturidade em poucos instantes.</p>
+                </div>
+            </div>
+        
             <form id="analyzeForm">
                 <div class="form-group">
                     <label for="url">URL do Site da Empresa</label>
@@ -88,56 +212,43 @@
                 <button type="submit" class="btn" id="submitBtn">Analisar Site</button>
             </form>
 
-            <div class="server-status connected" id="serverStatus">
-                Servidor conectado - pronto para analisar
-            </div>
-
             <div class="features">
-                <div class="feature"><div class="feature-icon">📊</div><div class="feature-text">5 Dimensoes</div></div>
-                <div class="feature"><div class="feature-icon">⚡</div><div class="feature-text">Rapido</div></div>
-                <div class="feature"><div class="feature-icon">📄</div><div class="feature-text">Relatorio HTML</div></div>
+                <div class="feature"><div class="feature-icon">&#128202;</div><div class="feature-text">5 dimens&otilde;es</div></div>
+                <div class="feature"><div class="feature-icon">&#9889;</div><div class="feature-text">R&aacute;pido</div></div>
+                <div class="feature"><div class="feature-icon">&#128196;</div><div class="feature-text">Relat&oacute;rio HTML</div></div>
             </div>
 
-            <div class="status loading" id="statusLoading">
-                <h3>🔄 Analisando Site...</h3>
-                <p id="statusMessage">Aguarde...</p>
-                <div class="spinner-steps">
-                    <div class="step-indicator pending" id="step1"><span class="step-indicator-icon">1</span><span>Buscando site</span></div>
-                    <div class="step-indicator pending" id="step2"><span class="step-indicator-icon">2</span><span>Extraindo dados</span></div>
-                    <div class="step-indicator pending" id="step3"><span class="step-indicator-icon">3</span><span>Calculando scores</span></div>
-                    <div class="step-indicator pending" id="step4"><span class="step-indicator-icon">4</span><span>Gerando relatorio</span></div>
+            <div class="status-region">
+                <div class="status loading" id="statusLoading">
+                    <h3>&#8635; Analisando site...</h3>
+                    <p id="statusMessage">Aguarde...</p>
+                    <div class="spinner-steps">
+                        <div class="step-indicator pending" id="step1"><span class="step-indicator-icon">1</span><span>Buscando site</span></div>
+                        <div class="step-indicator pending" id="step2"><span class="step-indicator-icon">2</span><span>Extraindo dados</span></div>
+                        <div class="step-indicator pending" id="step3"><span class="step-indicator-icon">3</span><span>Calculando pontua&ccedil;&otilde;es</span></div>
+                        <div class="step-indicator pending" id="step4"><span class="step-indicator-icon">4</span><span>Gerando relat&oacute;rio</span></div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="status error" id="statusError">
-                <h3>❌ Erro na Analise</h3>
-                <p id="errorMessage">Verifique a URL e tente novamente.</p>
-            </div>
-
-            <div class="status success" id="statusSuccess">
-                <h3>✅ Relatorio Gerado!</h3>
-                <p>O relatorio foi criado com sucesso.</p>
-                <div class="score-preview" id="scorePreview">
-                    <h4>Score: <span id="finalScore">0</span>/100</h4>
-                    <div class="score-bars" id="scoreBars"></div>
+                <div class="status error" id="statusError">
+                    <h3>&#10060; Erro na an&aacute;lise</h3>
+                    <p id="errorMessage">Verifique a URL e tente novamente.</p>
                 </div>
-                <div class="result-actions">
-                    <a href="#" class="btn-secondary" id="viewReport" target="_blank">Ver Relatorio</a>
-                    <button class="btn-secondary" id="newAnalysis">Nova Analise</button>
+
+                <div class="status success" id="statusSuccess">
+                    <h3>&#9989; Relat&oacute;rio gerado!</h3>
+                    <p>O relat&oacute;rio foi criado com sucesso.</p>
+                    <div class="score-preview" id="scorePreview">
+                        <h4>Score: <span id="finalScore">0</span>/100</h4>
+                        <div class="score-bars" id="scoreBars"></div>
+                    </div>
+                    <div class="result-actions">
+                        <a href="#" class="btn-secondary" id="viewReport" target="_blank">Ver Relat&oacute;rio</a>
+                        <button class="btn-secondary" id="newAnalysis">Nova An&aacute;lise</button>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <div class="how-it-works">
-            <h2>Como Funciona</h2>
-            <div class="steps-list">
-                <div class="step-item"><div class="step-number">1</div><div class="step-title">Insira a URL</div><div class="step-desc">Digite o endereco do site</div></div>
-                <div class="step-item"><div class="step-number">2</div><div class="step-title">Analise Automatica</div><div class="step-desc">Extrai e analisa dados</div></div>
-                <div class="step-item"><div class="step-number">3</div><div class="step-title">Relatorio</div><div class="step-desc">Receba insights</div></div>
-            </div>
-        </div>
-
-        <div class="footer"><p>BMAD Skills</p></div>
     </div>
 
     <script>
@@ -155,13 +266,14 @@
         const scoreBars = document.getElementById('scoreBars');
         const finalScoreEl = document.getElementById('finalScore');
         const serverStatus = document.getElementById('serverStatus');
+        const queryToken = new URLSearchParams(window.location.search).get('token') || '';
 
         const dimensionNames = {
-            presenceDigital: 'Presenca Digital',
+            presenceDigital: 'Presen\u00e7a Digital',
             socialMedia: 'Redes Sociais',
-            cultureInnovation: 'Cultura Inovacao',
-            communication: 'Comunicacao',
-            transformation: 'Transformacao'
+            cultureInnovation: 'Cultura de Inova\u00e7\u00e3o',
+            communication: 'Comunica\u00e7\u00e3o',
+            transformation: 'Transforma\u00e7\u00e3o'
         };
 
         function setStep(num, state) {
@@ -186,12 +298,26 @@
             return 'var(--danger)';
         }
 
+        function withToken(path) {
+            if (!queryToken) return path;
+            return path + (path.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(queryToken);
+        }
+
+        async function fetchProtected(path, options) {
+            const response = await fetch(withToken(path), options);
+            if (response.status === 401 || response.status === 403) {
+                window.location.replace(withToken('/'));
+                throw new Error('Acesso não autorizado');
+            }
+            return response;
+        }
+
         function renderScoreBars(scores) {
             let html = '';
             for (const [key, value] of Object.entries(scores)) {
                 if (key === 'finalScore') continue;
                 const name = dimensionNames[key] || key;
-                html += '<div class="score-bar"><span class="score-bar-label">' + name + '</span><div class="score-bar-fill"><div style="width:' + value + '%;height:100%;background:' + getScoreColor(value) + ';border-radius:4px;"></div></div><span class="score-bar-value">' + value + '</span></div>';
+                html += '<div class="score-bar"><span class="score-bar-label">' + name + '</span><div class="score-bar-fill"><div style="width:' + value + '%;height:100%;background:' + getScoreColor(value) + ';border-radius:999px;"></div></div><span class="score-bar-value">' + value + '</span></div>';
             }
             scoreBars.innerHTML = html;
             finalScoreEl.textContent = scores.finalScore || 0;
@@ -199,7 +325,7 @@
 
         async function checkServer() {
             try {
-                const res = await fetch(API_BASE + '/');
+                const res = await fetchProtected(API_BASE + '/api/status');
                 if (res.ok) {
                     serverStatus.textContent = 'Servidor conectado - pronto para analisar';
                     serverStatus.className = 'server-status connected';
@@ -220,8 +346,8 @@
             const steps = [
                 { num: 1, msg: 'Conectando ao site...' },
                 { num: 2, msg: 'Extraindo dados...' },
-                { num: 3, msg: 'Calculando scores...' },
-                { num: 4, msg: 'Gerando relatorio...' }
+                { num: 3, msg: 'Calculando pontua\u00e7\u00f5es...' },
+                { num: 4, msg: 'Gerando relat\u00f3rio...' }
             ];
 
             try {
@@ -231,7 +357,7 @@
                     await new Promise(r => setTimeout(r, 400));
                 }
 
-                const response = await fetch(API_BASE + '/api/analyze', {
+                const response = await fetchProtected(API_BASE + '/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url: url })
@@ -240,13 +366,13 @@
                 const data = await response.json();
 
                 if (!response.ok || !data.success) {
-                    throw new Error(data.details || data.error || 'Erro na analise');
+                    throw new Error(data.details || data.error || 'Erro na an\u00e1lise');
                 }
 
                 for (let i = 1; i <= 4; i++) setStep(i, 'done');
 
                 showStatus(statusSuccess);
-                viewReport.href = API_BASE + '/reports/' + data.filename;
+                viewReport.href = withToken(API_BASE + '/reports/' + data.filename);
 
                 if (data.scores) renderScoreBars(data.scores);
 
@@ -254,7 +380,7 @@
                 console.error('Erro completo:', error);
                 let msg = error.message || 'Erro desconhecido';
                 if (msg.includes('fetch') || msg.includes('network') || msg === 'Failed to fetch') {
-                    msg = 'Servidor nao esta rodando. Verifique se o servidor esta ativo (npm start).';
+                    msg = 'Servidor n\u00e3o est\u00e1 rodando. Verifique se o servidor est\u00e1 ativo (npm start).';
                 }
                 errorMessage.textContent = msg;
                 showStatus(statusError);
