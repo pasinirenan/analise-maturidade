@@ -1203,6 +1203,10 @@ async function analyzeSite(url, llmConfig = null) {
     llmResult.using_llm = true;
     llmResult.provider = llmConfig.provider.toUpperCase();
     
+    const scores = llmResult.scores || { finalScore: 50, presenceDigital: 50, socialMedia: 50, cultureInnovation: 50, communication: 50, transformation: 50 };
+    llmResult.benchmark = generateBenchmark(analysis, scores, sector);
+    llmResult.segmento = sector;
+    
     return {
       analysis,
       llmResult,
