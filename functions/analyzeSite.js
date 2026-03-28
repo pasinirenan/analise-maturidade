@@ -2170,15 +2170,8 @@ function generateHTMLReport(result, analysis) {
         .gap-good { color: var(--success); font-weight: 600; }
         .email-btn { display: inline-block; background: var(--success); color: white; padding: 10px 25px; border-radius: 25px; text-decoration: none; font-weight: 600; margin-top: 15px; cursor: pointer; border: none; font-size: 0.95rem; }
         .email-btn:hover { background: #228b75; }
-        .email-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
-        .email-modal.active { display: flex; }
-        .email-modal-content { background: white; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; }
-        .email-modal-content h3 { color: var(--primary); margin-bottom: 20px; }
-        .email-modal-content input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; margin-bottom: 15px; font-size: 1rem; }
-        .email-modal-content button { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
-        .btn-send { background: var(--success); color: white; }
-        .btn-cancel { background: #e0e0e0; color: #333; margin-left: 10px; }
-        .email-status { margin-top: 15px; text-align: center; font-size: 0.9rem; }
+        .email-btn:disabled { background: #6c757d; cursor: not-allowed; }
+        .email-status { margin-top: 10px; text-align: center; font-size: 0.95rem; }
     </style>
 </head>
 <body>
@@ -2190,40 +2183,30 @@ function generateHTMLReport(result, analysis) {
         <br>
         <div class="level-badge">NÍVEL ${result.maturidade.level} - ${result.maturidade.name}</div>
         <br><br>
-        <button class="email-btn" onclick="openEmailModal()">📧 Enviar Relatório por Email</button>
+        <div id="emailForm" style="margin-top: 15px;">
+            <input type="email" id="emailInput" placeholder="Digite seu email para receber o relatório" style="padding: 12px 20px; border: 2px solid rgba(255,255,255,0.3); border-radius: 25px; font-size: 0.95rem; width: 300px; background: rgba(255,255,255,0.9); color: #333;">
+            <button class="email-btn" onclick="sendReport()" id="sendBtn">📧 Enviar PDF por Email</button>
+        </div>
+        <div id="emailStatus" style="margin-top: 10px; font-size: 0.95rem;"></div>
     </header>
     
-    <div class="email-modal" id="emailModal">
-        <div class="email-modal-content">
-            <h3>Enviar Relatório por Email</h3>
-            <input type="email" id="emailInput" placeholder="Digite seu email" required>
-            <div>
-                <button class="btn-send" onclick="sendReport()">Enviar</button>
-                <button class="btn-cancel" onclick="closeEmailModal()">Cancelar</button>
-            </div>
-            <div class="email-status" id="emailStatus"></div>
-        </div>
-    </div>
-    
     <script>
-        function openEmailModal() {
-            document.getElementById('emailModal').classList.add('active');
-            document.getElementById('emailInput').focus();
-        }
-        function closeEmailModal() {
-            document.getElementById('emailModal').classList.remove('active');
-            document.getElementById('emailStatus').textContent = '';
-        }
         async function sendReport() {
             const email = document.getElementById('emailInput').value;
             const status = document.getElementById('emailStatus');
+            const btn = document.getElementById('sendBtn');
+            
             if (!email || !email.includes('@')) {
                 status.textContent = 'Email inválido';
                 status.style.color = '#e76f51';
                 return;
             }
-            status.textContent = 'Enviando...';
-            status.style.color = '#1e3a5f';
+            
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            status.textContent = 'Gerando PDF e enviando...';
+            status.style.color = '#fff';
+            
             try {
                 const response = await fetch('/api/send-email', {
                     method: 'POST',
@@ -2234,23 +2217,26 @@ function generateHTMLReport(result, analysis) {
                         companyName: '${result.empresa}'
                     })
                 });
+                
                 const data = await response.json();
+                
                 if (data.success) {
-                    status.textContent = 'Email enviado com sucesso!';
+                    status.textContent = 'Email enviado com sucesso! Verifique sua caixa de entrada.';
                     status.style.color = '#2a9d8f';
-                    setTimeout(closeEmailModal, 2000);
+                    btn.textContent = 'Enviado!';
                 } else {
-                    status.textContent = 'Erro: ' + (data.error || 'Tente novamente');
+                    status.textContent = 'Erro: ' + (data.details || data.error || 'Tente novamente');
                     status.style.color = '#e76f51';
+                    btn.disabled = false;
+                    btn.textContent = '📧 Enviar PDF por Email';
                 }
             } catch (e) {
                 status.textContent = 'Erro de conexão';
                 status.style.color = '#e76f51';
+                btn.disabled = false;
+                btn.textContent = '📧 Enviar PDF por Email';
             }
         }
-        document.getElementById('emailModal').addEventListener('click', function(e) {
-            if (e.target === this) closeEmailModal();
-        });
     </script>
 
     <main class="container">
