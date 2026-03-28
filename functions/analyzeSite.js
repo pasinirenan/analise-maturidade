@@ -2495,7 +2495,7 @@ function generateHTMLReport(result, analysis) {
             <div style="margin-top: 20px; padding: 15px; background: var(--light); border-radius: 8px;">
                 <h4 style="color: var(--primary); margin-bottom: 10px;">Perfil do Negócio Identificado</h4>
                 <div style="font-size: 0.9rem;">
-                    <p><strong>Problema Principal:</strong> ${result.benchmark.serviceProfile.problema_principal.name || result.benchmark.serviceProfile.problema_principal.categoria}</p>
+                    <p><strong>Problema Principal:</strong> ${result.benchmark.serviceProfile.problema_principal.name || result.benchmark.serviceProfile.problema_principal.categoria || 'N/A'}</p>
                     ${result.benchmark.serviceProfile.publico_alvo && result.benchmark.serviceProfile.publico_alvo.length > 0 ? `<p><strong>Público-alvo:</strong> ${result.benchmark.serviceProfile.publico_alvo.join(', ')}</p>` : ''}
                     ${result.benchmark.serviceProfile.tecnologias && result.benchmark.serviceProfile.tecnologias.length > 0 ? `<p><strong>Tecnologias:</strong> ${result.benchmark.serviceProfile.tecnologias.slice(0, 5).join(', ')}</p>` : ''}
                     <p style="color: var(--gray); font-size: 0.8rem;">Confiança do perfil: ${result.benchmark.serviceProfile.score_confianca || 0}%</p>
@@ -2507,19 +2507,19 @@ function generateHTMLReport(result, analysis) {
                 <h4 style="color: var(--primary); margin-bottom: 10px;">Negócios e Concorrentes Identificados</h4>
                 ${result.benchmark.productsAndServices.negocios.map(n => `
                 <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #ddd;">
-                    <strong style="color: var(--secondary);">${n.tipo}:</strong>
+                    <strong style="color: var(--secondary);">${n.tipo || 'N/A'}:</strong>
                     <div style="margin-top: 5px; font-size: 0.85rem; color: var(--gray);">
-                        <strong>Concorrentes:</strong> ${n.concorrentes.join(', ')}
+                        <strong>Concorrentes:</strong> ${(n.concorrentes || []).join(', ') || 'Nenhum encontrado'}
                     </div>
                 </div>
                 `).join('')}
             </div>
             ` : ''}
-            ${result.benchmark.productsAndServices && (result.benchmark.productsAndServices.produtos.length > 0 || result.benchmark.productsAndServices.servicos.length > 0) ? `
+            ${result.benchmark.productsAndServices && (result.benchmark.productsAndServices.produtos?.length > 0 || result.benchmark.productsAndServices.servicos?.length > 0) ? `
             <div style="margin-top: 15px; padding: 12px; background: var(--light); border-radius: 8px;">
                 <p style="font-size: 0.85rem; color: var(--gray); margin-bottom: 5px;"><strong>Tecnologias/Serviços identificados:</strong></p>
-                ${result.benchmark.productsAndServices.servicos.length > 0 ? `<span style="font-size: 0.8rem; color: var(--gray);">${result.benchmark.productsAndServices.servicos.join(', ')}</span>` : ''}
-                ${result.benchmark.productsAndServices.produtos.length > 0 ? `<span style="font-size: 0.8rem; color: var(--gray); margin-left: 10px;">${result.benchmark.productsAndServices.produtos.join(', ')}</span>` : ''}
+                ${result.benchmark.productsAndServices.servicos?.length > 0 ? `<span style="font-size: 0.8rem; color: var(--gray);">${result.benchmark.productsAndServices.servicos.join(', ')}</span>` : ''}
+                ${result.benchmark.productsAndServices.produtos?.length > 0 ? `<span style="font-size: 0.8rem; color: var(--gray); margin-left: 10px;">${result.benchmark.productsAndServices.produtos.join(', ')}</span>` : ''}
             </div>
             ` : ''}
             ${result.benchmark.leaders && result.benchmark.leaders.length > 0 ? `
