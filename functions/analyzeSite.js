@@ -568,44 +568,8 @@ function analyzeProductsAndServices(analysis) {
     ...(analysis.headings || []),
     ...(analysis.navLinks || []),
     ...(analysis.footerLinks || []),
-    (analysis.mainContent || '').substring(0, 10000)
+    (analysis.mainContent || '').substring(0, 15000)
   ].join(' ').toLowerCase();
-
-  const negocioCompetitors = {
-    'Associação/Entidade': { principais: ['FECOMÉRCIO', 'CNC', 'ACSP', 'CDL BH', 'Sebrae', 'SENAI', 'SESI'], regionais: ['CDL São Paulo', 'ACIEB', 'ACIM', 'ACIC'], similares: ['Sindicatos Regionais', 'Federações'] },
-    'Restaurante': { principais: ['McDonalds', 'Burger King', 'Subway', 'Pizza Hut', 'Habibs'], regionais: ['Chopp Brahma', 'Giraffas', 'Bobs', 'KFC', 'Outback'], similares: ['Applebees', 'Vea', 'Spoleto'] },
-    'Academia': { principais: ['Smart Fit', 'Bio Ritmo', 'Gold\'s Gym'], regionais: ['Blue Fit', 'Power Fit', 'Curves'], similares: ['CrossFit', 'Academia Local'] },
-    'Clínica Médica': { principais: ['Hospital Albert Einstein', 'Sírio-Libanês', 'Oswaldo Cruz'], regionais: ['Fleury', 'DASA', 'Diagnóstico por Imagem'], similares: ['Lavoisier', 'A+', 'CDB'] },
-    'Farmácia': { principais: ['Drogaria São Paulo', 'Drogarias Extra', 'Raia Drogasil'], regionais: ['Drogasil', 'Pague Menos', 'Ultrafarma'], similares: ['Drogaria Local'] },
-    'Educação': { principais: ['Anhanguera', 'Estácio', 'Pitágoras', 'UniNassau'], regionais: ['Unopar', 'UNIP', 'UniFIJ', 'UNOPAR'], similares: ['Coursera', 'Alura', 'Descomplica'] },
-    'Advocacia': { principais: ['TozziniFreire', 'Mattos Filho', 'Mendes Kaufmann'], regionais: ['Levy & Partners', 'Cascione'], similares: ['Escritório Local'] },
-    'Contabilidade': { principais: ['Contabilizei', 'Contabilidade App'], regionais: ['Contabil', 'Nexcore', 'Confere'], similares: ['Escritório Local'] },
-    'Imobiliária': { principais: ['Lopes', 'Viva Real', 'Zap Imóveis', 'Loft'], regionais: ['Fernandes', 'Cyrela', 'MRV'], similares: ['Imobiliária Local'] },
-    'Pet Shop': { principais: ['Petz', 'Cobasi', 'Petlove'], regionais: ['Pet Center', 'Petland', 'Cãobeira'], similares: ['Pet Shop Local'] },
-    'Beleza/Salão': { principais: ['Beleza Natural', 'Instituto Embelleze'], regionais: ['Espaço Beauty', 'Studio W'], similares: ['Salão Local'] },
-    'Odontologia': { principais: ['Orthodontic', 'Implante', 'Sorriden'], regionais: ['CIO', 'Dental', 'Implart'], similares: ['Clínica Local'] },
-    'Autos': { principais: ['Volkswagen', 'Toyota', 'Ford', 'Chevrolet'], regionais: ['Honda', 'Fiat', 'BYD', 'CAOA'], similares: ['Concessionária Local'] },
-    'Construção/Reformas': { principais: ['C&C', 'Leroy Merlin'], regionais: ['Makro', 'Casa & Construção'], similares: ['Construtora Local'] },
-    'Moda/Roupas': { principais: ['Renner', 'C&A', 'Riachuelo', 'Marisa'], regionais: ['Marisa', 'Lojas Renner'], similares: ['Nike', 'Adidas', 'Zattini'] },
-    'Hotel/Pousada': { principais: ['Accor', 'Marriott', 'Hilton'], regionais: ['Ibis', 'Holiday Inn'], similares: ['Airbnb', 'Pousada Local'] },
-    'Turismo': { principais: ['CVC', 'Decolar', 'Viagens Combo'], regionais: ['Submarino Viagens'], similares: ['Booking', 'Airbnb'] },
-    'Logística': { principais: ['iFood', 'Lalamove', 'Loggi'], regionais: ['Intelipost', 'Jadlog'], similares: ['Azul Cargo', 'Transportadora Local'] },
-    'Marketing Digital': { principais: ['Rock Content', 'Resultados Digitais', 'Youpage'], regionais: ['RD Station', 'Mauá Digital'], similares: ['Agência Local'] },
-    'Desenvolvimento de Software': { principais: ['TOTVS', 'Locaweb', 'Softvar'], regionais: ['Vindi', 'Pagar.me', 'iugu'], similares: ['Agência de Desenvolvimento Local'] },
-    'Consultoria em Tecnologia': { principais: ['Accenture', 'Deloitte Digital', 'Tivit'], regionais: ['Prodigious', 'Linikin'], similares: ['Consultoria Local'] },
-    'Inteligência Artificial': { principais: ['Accenture AI', 'IBM Watson', 'DataRobot'], regionais: ['Qranio', 'Stacking'], similares: ['Startup de IA Local'] },
-    'Consultoria de Inovação': { principais: ['FC.NOVAS', 'Bosso Digital', 'Future Minds'], regionais: ['Lunier Innovation', 'Think en', 'Nidus Lab'], similares: ['Consultoria Local de Inovação'] },
-    'Inovação e Transformação Digital': { principais: ['Accenture', 'Deloitte', 'McKinsey Digital'], regionais: ['TNT', 'Quantic'], similares: ['Consultoria de Transformação Local'] },
-    'Financeiro': { principais: ['Nubank', 'C6 Bank', 'Inter', 'PicPay'], regionais: ['PagSeguro', 'Mercado Pago'], similares: ['Banco Local'] },
-    'Varejo': { principais: ['Magazine Luiza', 'Americanas', 'Casas Bahia'], regionais: ['Ponto Frio', 'Shoptime'], similares: ['Amazon', 'Shopee'] },
-    'E-commerce': { principais: ['Shopee', 'Mercado Livre', 'Amazon Brasil'], regionais: ['Magazine Luiza', 'Americanas'], similares: ['Shopify', 'VTEX', 'Nuvemshop'] },
-    'Eventos': { principais: ['Buffet Premium'], regionais: ['Espaço para Eventos Local'], similares: ['Buffet Local'] },
-    'Fitness': { principais: ['Smart Fit', 'Bio Ritmo'], regionais: ['Blue Fit', 'Power Fit'], similares: ['CrossFit'] },
-    'Barbearia': { principais: ['Barber Shop'], regionais: ['Barbearia do Bairro'], similares: ['Barbearia Local'] },
-    'Oficina Mecânica': { principais: ['Auto Center Local'], regionais: ['Funilaria Local'], similares: ['Mecânica Local'] },
-    'Lavanderia': { principais: ['Lavanderia 5àsec'], regionais: ['Lavanderia Express'], similares: ['Lavanderia Local'] },
-    'Prestador de Serviços': { principais: ['SERASA', 'Sebrae'], regional: ['SENAI', 'SESC'], similares: ['Prestadores Regionais'] }
-  };
 
   const servicosDetectados = [];
   const serviceIndicators = [
@@ -614,8 +578,9 @@ function analyzeProductsAndServices(analysis) {
     { servico: 'Agendamento Online', keywords: ['agendamento', 'agendar', 'horário'] },
     { servico: 'Pagamento Online', keywords: ['pagamento online', 'pix', 'cartão'] },
     { servico: 'Chatbot', keywords: ['chatbot', 'atendimento automático'] },
-    { servico: 'whatsapp', keywords: ['whatsapp', 'zap'] },
-    { servico: 'Delivery', keywords: ['delivery', 'entrega em domicílio'] }
+    { servico: 'WhatsApp', keywords: ['whatsapp', 'zap'] },
+    { servico: 'App Mobile', keywords: ['aplicativo', 'app mobile', 'ios', 'android'] },
+    { servico: 'Automação', keywords: ['automação', 'automacao', 'rpa'] }
   ];
 
   for (const s of serviceIndicators) {
@@ -629,19 +594,18 @@ function analyzeProductsAndServices(analysis) {
     }
   }
 
-  const negocioInfo = negocioCompetitors[businessType.tipo] || negocioCompetitors['Prestador de Serviços'];
-  
   const servicosEspecificos = extractSpecificServices(allText, businessType);
-  const todosConcorrentes = [
-    ...(negocioInfo.principais || []),
-    ...(negocioInfo.regionais || []),
-    ...(negocioInfo.similares || [])
-  ].filter(c => c);
+  
+  const negocioInfo = getCompetitorsForServices(businessType.tipo, servicosEspecificos, allText);
 
+  console.log(`[Products] === ANÁLISE DETALHADA DO NEGÓCIO ===`);
   console.log(`[Products] Tipo identificado: ${businessType.tipo}`);
   console.log(`[Products] Descrição: ${businessType.description}`);
-  console.log(`[Products] Serviços específicos: ${servicosEspecificos.join(', ')}`);
-  console.log(`[Products] Concorrentes: ${todosConcorrentes.slice(0, 5).join(', ')}`);
+  console.log(`[Products] Título do site: ${businessType.title}`);
+  console.log(`[Products] Proposta de valor: ${businessType.valueProposition}`);
+  console.log(`[Products] Serviços específicos detectados: ${servicosEspecificos.join(', ')}`);
+  console.log(`[Products] Recursos detectados: ${servicosDetectados.join(', ')}`);
+  console.log(`[Products] Concorrentes baseados nos serviços: ${negocioInfo.concorrentes.slice(0, 5).join(', ')}`);
 
   return {
     tipo: businessType.tipo,
@@ -656,13 +620,103 @@ function analyzeProductsAndServices(analysis) {
     negocios: [{
       tipo: businessType.tipo,
       description: businessType.description,
-      concorrentes: todosConcorrentes,
-      concorrentesPrincipais: negocioInfo.principais || [],
-      concorrentesRegionais: negocioInfo.regionais || [],
-      concorrentesSimilares: negocioInfo.similares || []
+      concorrentes: negocioInfo.concorrentes,
+      concorrentesPrincipais: negocioInfo.principais,
+      concorrentesRegionais: negocioInfo.regionais,
+      concorrentesSimilares: negocioInfo.similares,
+      servicosBase: negocioInfo.servicosBase
     }],
     produtos: [],
     categorias: []
+  };
+}
+
+function getCompetitorsForServices(businessType, specificServices, allText) {
+  const allServices = [...specificServices];
+  
+  const serviceBasedCompetitors = {
+    'AI e Machine Learning': {
+      principais: ['Accenture AI', 'IBM Watson', 'DataRobot', 'Google AI', 'Microsoft Azure AI'],
+      regionais: ['Qranio', 'Stacking', 'Sensedia', 'Looqbox'],
+      similares: ['Startups de IA Locais', 'Consultorias de IA']
+    },
+    'Análise de Dados': {
+      principais: ['Tableau', 'Power BI', 'Looker', 'TIBCO'],
+      regionais: ['DataStory', 'Cosmos', 'Indicium'],
+      similares: ['Consultorias de BI', 'Agências de Analytics']
+    },
+    'Desenvolvimento Web': {
+      principais: [' Accenture Digital', 'ThoughtWorks', 'DEPT Agency'],
+      regionais: ['TOTVS', 'Locaweb', 'Vindi'],
+      similares: ['Agências de Desenvolvimento Web Locais']
+    },
+    'Aplicativos': {
+      principais: ['Toptal', 'Upwork', 'CleverTech'],
+      regionais: ['Mobicare', 'M死角', 'AppPresser'],
+      similares: ['Desenvolvedores de App Locais']
+    },
+    'Cloud': {
+      principais: ['AWS', 'Azure', 'Google Cloud'],
+      regionais: ['Locaweb', 'KingHost', 'Uol Diveo'],
+      similares: ['Provedores de Cloud Locais']
+    },
+    'E-commerce': {
+      principais: ['Shopify', 'VTEX', 'Nuvemshop', 'Tray'],
+      regionais: ['E-Commerce Brasil', 'Webstore'],
+      similares: ['Agências de E-commerce Locais']
+    },
+    'Marketing Digital': {
+      principais: ['Rock Content', 'Resultados Digitais', 'Youpage'],
+      regionais: ['Maudit', 'Agência FATO'],
+      similares: ['Agências de Marketing Locais']
+    },
+    'Automação': {
+      principais: ['Zapier', 'Make', 'Power Automate'],
+      regionais: ['Uipath', 'Automation Anywhere'],
+      similares: ['Consultorias de Automação Locais']
+    }
+  };
+
+  let concorrentes = [];
+  let principais = [];
+  let regionais = [];
+  let similares = [];
+
+  if (specificServices.length > 0) {
+    for (const servico of specificServices) {
+      if (serviceBasedCompetitors[servico]) {
+        const info = serviceBasedCompetitors[servico];
+        concorrentes.push(...info.principais, ...info.regionais);
+        principais.push(...info.principais);
+        regionais.push(...info.regionais);
+        similares.push(...info.similares);
+      }
+    }
+  }
+
+  if (concorrentes.length === 0) {
+    const defaultCompetitors = {
+      principais: ['Líderes de Mercado do Setor'],
+      regionais: ['Concorrentes Regionais'],
+      similares: ['Alternativas e Substitutos']
+    };
+    concorrentes = [...defaultCompetitors.principais, ...defaultCompetitors.regionais];
+    principais = defaultCompetitors.principais;
+    regionais = defaultCompetitors.regionais;
+    similares = defaultCompetitors.similares;
+  }
+
+  const uniqueConcorrentes = [...new Set(concorrentes)].slice(0, 10);
+  const uniquePrincipais = [...new Set(principais)].slice(0, 5);
+  const uniqueRegionais = [...new Set(regionais)].slice(0, 5);
+  const uniqueSimilares = [...new Set(similares)].slice(0, 5);
+
+  return {
+    concorrentes: uniqueConcorrentes,
+    principais: uniquePrincipais,
+    regionais: uniqueRegionais,
+    similares: uniqueSimilares,
+    servicosBase: specificServices.join(', ')
   };
 }
 
@@ -877,22 +931,21 @@ function findCompetitorsByProductsAndServices(productsAndServices, companyName, 
   return competitorsList;
 }
 
-async function findRelevantCompetitors(companyName, sector, companySize, socialMedia, analysis) {
+async function findRelevantCompetitors(companyName, businessType, companySize, socialMedia, analysis) {
   const url = analysis.url || '';
   const productsAndServices = analyzeProductsAndServices(analysis);
   const region = extractRegion(url, analysis);
   
-  console.log(`[Competitors] Empresa: ${companyName}, Tipo: ${productsAndServices.tipo}, Região: ${region || 'N/I'}`);
-  
-  const googleCompetitors = await searchGoogleCompetitors(
-    companyName, 
-    productsAndServices.tipo, 
-    region
-  );
+  console.log(`[Competitors] === INICIANDO ANÁLISE DE CONCORRENTES ===`);
+  console.log(`[Competitors] Empresa: ${companyName}`);
+  console.log(`[Competitors] Tipo de negócio identificado: ${productsAndServices.tipo}`);
+  console.log(`[Competitors] Descrição: ${productsAndServices.description}`);
+  console.log(`[Competitors] Serviços específicos detectados: ${productsAndServices.specificServices.join(', ')}`);
+  console.log(`[Competitors] Região: ${region || 'N/I'}`);
   
   const localCompetitors = findCompetitorsByProductsAndServices(productsAndServices, companyName, url, analysis);
   
-  const allCompetitors = [...new Set([...googleCompetitors, ...localCompetitors])];
+  const allCompetitors = [...new Set([...localCompetitors])];
   
   const competitorsList = allCompetitors.filter(c => {
     const cLower = c.toLowerCase();
@@ -905,12 +958,15 @@ async function findRelevantCompetitors(companyName, sector, companySize, socialM
     return true;
   }).slice(0, 8);
   
-  console.log(`[Competitors] Lista final: ${competitorsList.join(', ')}`);
+  console.log(`[Competitors] === CONCORRENTES IDENTIFICADOS ===`);
+  console.log(`[Competitors] Baseado em: ${productsAndServices.tipo} - ${productsAndServices.description}`);
+  console.log(`[Competitors] Lista: ${competitorsList.join(', ')}`);
 
   return {
     competitors: competitorsList,
     productsAndServices: productsAndServices,
-    googleSearched: googleCompetitors.length > 0
+    googleSearched: false,
+    businessDescription: `${productsAndServices.tipo}: ${productsAndServices.description}`
   };
 }
 
@@ -1977,12 +2033,13 @@ async function analyzeSite(url, llmConfig = null, progressCallback = null) {
   const activeSocials = socialMedia.summary?.activeProfiles || 0;
   console.log(`Redes sociais ativas encontradas: ${activeSocials}`);
   
-  updateStep(5, 'done', 'Setor identificado');
+  updateStep(5, 'done', 'Negócio identificado');
   
-  console.log(`Classificando setor e gerando benchmark...`);
-  const sector = classifySector(analysis, socialMedia);
-  console.log(`Setor identificado: ${sector}`);
-  analysis.sector = sector;
+  console.log(`Analisando tipo de negócio e gerando benchmark...`);
+  const businessType = identifyBusinessType(analysis);
+  console.log(`Tipo de negócio identificado: ${businessType.tipo}`);
+  console.log(`Descrição: ${businessType.description}`);
+  analysis.businessType = businessType.tipo;
   
   if (llmConfig && llmConfig.apiKey) {
     console.log(`Usando LLM (${llmConfig.provider}) para análise avançada...`);
@@ -1992,8 +2049,8 @@ async function analyzeSite(url, llmConfig = null, progressCallback = null) {
     llmResult.provider = llmConfig.provider.toUpperCase();
     
     const scores = llmResult.scores || { finalScore: 50, presenceDigital: 50, socialMedia: 50, cultureInnovation: 50, communication: 50, transformation: 50 };
-    llmResult.benchmark = await generateBenchmark(analysis, scores, sector, companyName);
-    llmResult.segmento = sector;
+    llmResult.benchmark = await generateBenchmark(analysis, scores, businessType.tipo, companyName);
+    llmResult.segmento = businessType.tipo;
     
     return {
       analysis,
@@ -2012,11 +2069,11 @@ async function analyzeSite(url, llmConfig = null, progressCallback = null) {
   const findings = getMainFindings(analysis, scores);
   const recommendations = getRecommendations(scores);
   const maturity = getMaturityLevel(scores.finalScore);
-  const benchmark = await generateBenchmark(analysis, scores, sector, companyName);
+  const benchmark = await generateBenchmark(analysis, scores, businessType.tipo, companyName);
   
   const result = {
     empresa: companyName,
-    segmento: sector,
+    segmento: businessType.tipo,
     scores: scores,
     maturidade: { level: maturity.level, name: maturity.name },
     forces,
@@ -2253,7 +2310,7 @@ function generateHTMLReport(result, analysis) {
             <h2>Dados da Análise</h2>
             <table class="data-table">
                 <tr><th>Empresa</th><td>${result.empresa}</td></tr>
-                <tr><th>Segmento</th><td>${result.segmento || 'A ser definido'}</td></tr>
+                <tr><th>Tipo de Negócio</th><td>${result.segmento || 'A ser definido'}</td></tr>
                 <tr><th>Porte</th><td>${result.benchmark?.companySizeLabel || result.porte || 'Não identificado'}</td></tr>
                 <tr><th>URL</th><td>${analysis.url}</td></tr>
                 <tr><th>Título do Site</th><td>${analysis.title}</td></tr>
