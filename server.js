@@ -230,74 +230,70 @@ app.post('/api/send-email', async (req, res) => {
     
     try {
         console.log('=== INICIANDO ENVIO DE EMAIL ===');
-        console.log('Configuração de email:', process.env.EMAIL_USER ? 'USUÁRIO OK' : 'USUÁRIO FALTANDO', process.env.EMAIL_PASS ? 'SENHA OK' : 'SENHA FALTANDO');
+        console.log('Configuração RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'CONFIGURADO' : 'FALTANDO');
         
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.error('EMAIL_USER ou EMAIL_PASS não configurados');
+        if (!process.env.RESEND_API_KEY) {
+            console.error('RESEND_API_KEY não configurada');
             return res.status(500).json({ 
                 error: 'Configuração de email incompleta',
-                details: 'As variáveis EMAIL_USER e EMAIL_PASS precisam estar configuradas no servidor'
+                details: 'A variável RESEND_API_KEY precisa estar configurada no servidor. Cadastre-se em https://resend.com'
             });
         }
         
-        const nodemailer = require('nodemailer');
-        console.log('Etapa 1: Módulos carregados');
+        const { Resend } = require('resend');
+        console.log('Etapa 1: Módulo Resend carregado');
         
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
-        
-        console.log('Etapa 2: Transportador criado');
-        
-        console.log('Verificando conexão com Gmail...');
-        await new Promise((resolve, reject) => {
-            transporter.verify((error, success) => {
-                if (error) {
-                    console.error('Erro na verificação:', error.message);
-                    reject(error);
-                } else {
-                    console.log('Conexão com Gmail OK');
-                    resolve(success);
-                }
-            });
-        });
-        
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: `Relatório de Maturidade de Inovação - ${companyName || 'Análise'}`,
-            html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2 style="color: #1e3a5f;">Relatório de Maturidade de Inovação</h2>
-                    <p>Olá,</p>
-                    <p>Segue o relatório de maturidade de inovação para <strong>${companyName || 'a empresa analisada'}</strong>.</p>
-                    <p>O relatório completo está disponível em PDF em anexo.</p>
-                    <p>Atenciosamente,<br>Equipe IEBT Inovação</p>
-                </div>
-            `
-        };
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        console.log('Etapa 2: Cliente Resend criado');
         
         console.log('Etapa 3: Enviando email para:', email);
-        console.log('Etapa 4: Chamando transporter.sendMail...');
         
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Etapa 5: Email enviado!');
-        console.log('Message ID:', info.messageId);
-        console.log('Response:', info.response);
+        const { data, error } = await resend.emails.send({
+            from: 'IEBT Inovação <onboarding@resend.dev>',
+            to: [email],
+            subject: `Relatório de Maturidade de Inovação - ${companyName || 'Análise'}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+                    <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); padding: 30px; border-radius: 12px 12px 0 0;">
+                        <h1 style="color: white; margin: 0; font-size: 1.5rem;">Relatório de Maturidade de Inovação</h1>
+                    </div>
+                    <div style="background: white; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 12px 12px;">
+                        <h2 style="color: #1e3a5f;">Olá!</h2>
+                        <p>Segue o relatório de maturidade de inovação para <strong>${companyName || 'a empresa analisada'}</strong>.</p>
+                        <p>Este relatório contém:</p>
+                        <ul>
+                            <li>Análise das 5 dimensões de inovação</li>
+                            <li>Pontuação detalhada e benchmark competitivo</li>
+                            <li>Recomendações de melhoria</li>
+                            <li>Análise comparativa com o setor</li>
+                        </ul>
+                        <p>O relatório HTML completo foi gerado e está disponível para visualização.</p>
+                        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
+                        <p style="color: #6c757d; font-size: 0.9rem;">Atenciosamente,<br><strong>Equipe IEBT Inovação</strong></p>
+                    </div>
+                </div>
+            `
+        });
+        
+        console.log('Etapa 4: Resposta do Resend:', data, error);
+        
+        if (error) {
+            console.error('Erro do Resend:', error);
+            return res.status(500).json({ 
+                error: 'Erro ao enviar email',
+                details: error.message || 'Erro do Resend',
+                code: error.code || 'RESEND_ERROR'
+            });
+        }
         
         console.log('=== EMAIL ENVIADO COM SUCESSO ===');
-        res.json({ success: true, message: 'Email enviado com sucesso!', messageId: info.messageId });
+        console.log('Email ID:', data?.id);
+        res.json({ success: true, message: 'Email enviado com sucesso!', emailId: data?.id });
     } catch (error) {
         console.error('=== ERRO COMPLETO ===');
         console.error('Nome do erro:', error.name);
         console.error('Mensagem do erro:', error.message);
         console.error('Código do erro:', error.code);
-        console.error('Response code:', error.responseCode);
-        console.error('Response:', error.response);
         console.error('Erro completo:', JSON.stringify(error, null, 2));
         res.status(500).json({ 
             error: 'Erro ao enviar email',
