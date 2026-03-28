@@ -281,7 +281,14 @@
                 }
                 statusMessage.textContent = 'Analise concluida!';
                 showStatus(statusSuccess);
-                viewReport.href = API_BASE + '/reports/' + data.filename;
+                if (data.reportHtml) {
+                    currentReportHtml = data.reportHtml;
+                    const blob = new Blob([data.reportHtml], { type: 'text/html' });
+                    const reportUrl = URL.createObjectURL(blob);
+                    viewReport.href = reportUrl;
+                } else {
+                    viewReport.href = API_BASE + '/reports/' + data.filename;
+                }
                 if (data.scores) renderScoreBars(data.scores);
 
             } catch (error) {

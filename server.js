@@ -151,6 +151,7 @@ app.post('/api/analyze', async (req, res) => {
             maturity: result.llmResult.maturidade,
             using_llm: isLLMEnabled(),
             provider: getProviderName(),
+            reportHtml: result.html
         };
 
         console.log(`[${new Date().toLocaleTimeString()}] Relatório gerado: ${filename}`);
@@ -167,6 +168,7 @@ app.post('/api/analyze', async (req, res) => {
             maturity: result.llmResult.maturidade,
             using_llm: isLLMEnabled(),
             provider: getProviderName(),
+            reportHtml: result.html
         });
 
     } catch (error) {
