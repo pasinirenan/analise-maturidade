@@ -248,9 +248,10 @@ app.post('/api/send-email', async (req, res) => {
         console.log('Etapa 1: Módulos carregados');
         
         console.log('Etapa 2: Gerando PDF...');
-        const safeName = (companyName || 'analise').replace(/[^a-zA-Z0-9]/g, '-').substring(0, 50);
+        let safeName = (companyName || 'analise').replace(/[^a-zA-Z0-9]/g, '-').substring(0, 50);
         
         let pdfBuffer;
+        let isPdfSuccess = false;
         try {
             chromium.setHeadlessMode = true;
             chromium.setGraphicsMode = false;
@@ -275,6 +276,7 @@ app.post('/api/send-email', async (req, res) => {
             await browser.close();
             console.log('Etapa 3: PDF gerado com sucesso!');
             safeName = safeName + '.pdf';
+            isPdfSuccess = true;
         } catch (pdfError) {
             console.error('Erro ao gerar PDF com Chromium:', pdfError.message);
             console.log('Fallback: enviando HTML ao invés de PDF');
@@ -285,7 +287,7 @@ app.post('/api/send-email', async (req, res) => {
         const resend = new Resend(process.env.RESEND_API_KEY);
         console.log('Etapa 4: Enviando email para:', email);
         
-        const isHtmlFallback = safeName.endsWith('.html');
+        const isHtmlFallback = !isPdfSuccess;
         
         const { data, error } = await resend.emails.send({
             from: 'IEBT Inovação <onboarding@resend.dev>',
