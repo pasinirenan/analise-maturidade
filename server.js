@@ -272,6 +272,7 @@ app.post('/api/send-email', async (req, res) => {
             
             await browser.close();
             console.log('Etapa 3: PDF gerado com sucesso!');
+            safeName = safeName + '.pdf';
         } catch (pdfError) {
             console.error('Erro ao gerar PDF com Chromium:', pdfError.message);
             console.log('Fallback: enviando HTML ao invés de PDF');
