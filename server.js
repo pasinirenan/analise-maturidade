@@ -301,9 +301,9 @@ app.post('/api/send-email', async (req, res) => {
         console.error('Erro completo:', JSON.stringify(error, null, 2));
         res.status(500).json({ 
             error: 'Erro ao enviar email',
-            details: error.message,
-            code: error.code,
-            name: error.name
+            details: error.message || 'Erro desconhecido',
+            code: error.code || 'SEM_CODIGO',
+            name: error.name || 'Erro'
         });
     }
 });

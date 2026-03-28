@@ -375,7 +375,9 @@
                         emailForm.reset();
                     }, 2000);
                 } else {
-                    emailStatus.innerHTML = '<span style="color: var(--danger);">Erro: ' + (data.error || 'Tente novamente') + '</span>';
+                    const errorMsg = data.details || data.error || 'Tente novamente';
+                    const errorCode = data.code ? `<br><small>Código: ${data.code}</small>` : '';
+                    emailStatus.innerHTML = `<span style="color: var(--danger);">Erro: ${errorMsg}${errorCode}</span>`;
                 }
             } catch (error) {
                 emailStatus.innerHTML = '<span style="color: var(--danger);">Erro ao enviar. Verifique as configuracoes.</span>';
