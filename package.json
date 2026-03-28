@@ -13,7 +13,9 @@
     "cheerio": "^1.0.0-rc.12",
     "openai": "^4.28.0",
     "dotenv": "^16.4.0",
-    "resend": "^3.0.0"
+    "resend": "^3.0.0",
+    "@sparticuz/chromium": "^119.0.2",
+    "puppeteer-core": "^21.6.0"
   },
   "keywords": ["maturidade", "inovacao", "analise", "empresas", "llm", "openai"],
   "author": "",

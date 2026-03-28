@@ -241,15 +241,48 @@ app.post('/api/send-email', async (req, res) => {
         }
         
         const { Resend } = require('resend');
-        console.log('Etapa 1: Módulo Resend carregado');
+        const puppeteer = require('puppeteer-core');
+        const chromium = require('@sparticuz/chromium');
+        console.log('Etapa 1: Módulos carregados');
+        
+        console.log('Etapa 2: Gerando PDF...');
+        const safeName = (companyName || 'analise').replace(/[^a-zA-Z0-9]/g, '-').substring(0, 50);
+        
+        let pdfBuffer;
+        try {
+            chromium.setHeadlessMode = true;
+            chromium.setGraphicsMode = false;
+            
+            const browser = await puppeteer.launch({
+                args: chromium.args,
+                defaultViewport: chromium.defaultViewport,
+                executablePath: await chromium.executablePath(),
+                headless: chromium.headless
+            });
+            
+            const page = await browser.newPage();
+            await page.setContent(reportHtml, { waitUntil: 'networkidle0' });
+            await page.emulateMediaType('screen');
+            
+            pdfBuffer = await page.pdf({
+                format: 'A4',
+                printBackground: true,
+                margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' }
+            });
+            
+            await browser.close();
+            console.log('Etapa 3: PDF gerado com sucesso!');
+        } catch (pdfError) {
+            console.error('Erro ao gerar PDF com Chromium:', pdfError.message);
+            console.log('Fallback: enviando HTML ao invés de PDF');
+            pdfBuffer = Buffer.from(reportHtml, 'utf-8');
+            safeName = safeName + '.html';
+        }
         
         const resend = new Resend(process.env.RESEND_API_KEY);
-        console.log('Etapa 2: Cliente Resend criado');
+        console.log('Etapa 4: Enviando email para:', email);
         
-        console.log('Etapa 3: Enviando email para:', email);
-        
-        const safeName = (companyName || 'analise').replace(/[^a-zA-Z0-9]/g, '-').substring(0, 50);
-        const reportBuffer = Buffer.from(reportHtml, 'utf-8');
+        const isHtmlFallback = safeName.endsWith('.html');
         
         const { data, error } = await resend.emails.send({
             from: 'IEBT Inovação <onboarding@resend.dev>',
@@ -270,7 +303,7 @@ app.post('/api/send-email', async (req, res) => {
                             <li>Recomendações de melhoria</li>
                             <li>Análise comparativa com o setor</li>
                         </ul>
-                        <p><strong>Relatório em anexo!</strong> Abra o arquivo HTML em qualquer navegador.</p>
+                        <p><strong>Relatório em anexo!</strong> ${isHtmlFallback ? 'Abra o arquivo HTML em qualquer navegador.' : 'Abra o arquivo PDF em qualquer leitor de PDF.'}</p>
                         <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
                         <p style="color: #6c757d; font-size: 0.9rem;">Atenciosamente,<br><strong>Equipe IEBT Inovação</strong></p>
                     </div>
@@ -278,13 +311,13 @@ app.post('/api/send-email', async (req, res) => {
             `,
             attachments: [
                 {
-                    filename: `relatorio-maturidade-${safeName}.html`,
-                    content: reportBuffer.toString('base64')
+                    filename: `relatorio-maturidade-${safeName}`,
+                    content: isHtmlFallback ? pdfBuffer.toString('base64') : pdfBuffer.toString('base64')
                 }
             ]
         });
         
-        console.log('Etapa 4: Resposta do Resend:', data, error);
+        console.log('Etapa 5: Resposta do Resend:', data, error);
         
         if (error) {
             console.error('Erro do Resend:', error);
