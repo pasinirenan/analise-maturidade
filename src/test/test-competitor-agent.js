@@ -1,4 +1,4 @@
-const CompetitorAnalysisAgent = require('../src/index');
+const CompetitorAnalysisAgent = require('../index');
 
 async function test() {
   console.log('🧪 TESTE DO AGENTE DE ANÁLISE DE CONCORRENTES\n');

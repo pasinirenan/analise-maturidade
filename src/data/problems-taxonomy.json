@@ -2,6 +2,29 @@
   "version": "1.0.0",
   "lastUpdated": "2026-03-27",
   "problems": {
+    "associacao": {
+      "name": "Associação e Entidade de Classe",
+      "description": "Entidades associativas que representam e apoiam empresas de um setor ou região",
+      "keywords": ["associação", "associacao", "cdl", "câmara de dirigentes", "federac", "federacao", "sindicato", "câmara", "camara", "confederação", "conselho", "sesi", "senai", "sebrae", "fecomério", "acsp", "acie", "acium", "aciem", "classe", "empresa associado", "representação comercial", "entidade de classe", "associado", "associados", "representar", "defesa de interesses"],
+      "subcategories": {
+        "cdl": {
+          "name": "Câmara de Dirigentes Lojistas",
+          "keywords": ["cdl", "câmara de dirigentes lojistas", "lojistas", "comércio varejista", "varejo"],
+          "competitors": ["CDL São Paulo", "CDL BH", "CDL Curitiba", "CDL Porto Alegre", "CDL Salvador", "CDL Fortaleza", "FECOMÉRCIO", "CNC"]
+        },
+        "associacao_comercial": {
+          "name": "Associação Comercial",
+          "keywords": ["associação comercial", "aciem", "acie", "acim", "acip", "acieb", "aciag"],
+          "competitors": ["ACIEB", "ACIM", "ACIC", "ACIP", "ACIAG", "FECOMÉRCIO"]
+        },
+        "federacao": {
+          "name": "Federação e Sindicato",
+          "keywords": ["federação", "federacao", "sindicato", "confederação", "conselho regional"],
+          "competitors": ["FECOMÉRCIO", "CNC", "FIERGS", "FIEP", "FACESP"]
+        }
+      },
+      "competitors": ["CDL São Paulo", "CDL BH", "CDL Curitiba", "FECOMÉRCIO", "CNC", "ACIEB", "ACIM", "Sebrae", "SENAI", "SESI"]
+    },
     "atendimento": {
       "name": "Atendimento e Suporte ao Cliente",
       "description": "Soluções para comunicação e suporte ao cliente",
