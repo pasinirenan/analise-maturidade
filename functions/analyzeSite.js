@@ -2261,15 +2261,15 @@ function generateHTMLReport(result, analysis, lead = null) {
         .email-btn:hover { background: #228b75; }
         .email-btn:disabled { background: #6c757d; cursor: not-allowed; }
         .email-status { margin-top: 10px; text-align: center; font-size: 0.95rem; }
-        .action-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px 20px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; justify-content: center; gap: 15px; z-index: 1000; }
+        .action-bar { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
         .btn-print, .btn-save { padding: 12px 30px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; }
-        .btn-print { background: var(--light); color: var(--primary); border: 2px solid var(--primary); }
-        .btn-print:hover { background: var(--primary); color: white; }
-        .btn-save { background: var(--success); color: white; }
-        .btn-save:hover { background: #228b75; }
+        .btn-print { background: white; color: var(--primary); border: 2px solid white; }
+        .btn-print:hover { background: rgba(255,255,255,0.2); }
+        .btn-save { background: var(--accent); color: var(--dark); }
+        .btn-save:hover { background: #e8914a; }
         .btn-save:disabled { opacity: 0.7; cursor: not-allowed; }
-        .btn-save.success { background: var(--success); }
-        .btn-save.error { background: var(--danger); }
+        .btn-save.success { background: var(--success); color: white; }
+        .btn-save.error { background: var(--danger); color: white; }
         @media print { .action-bar { display: none; } }
         @media (max-width: 600px) { .action-bar { flex-direction: column; } .btn-print, .btn-save { width: 100%; } }
     </style>
@@ -2282,6 +2282,10 @@ function generateHTMLReport(result, analysis, lead = null) {
         <div class="score-badge">${result.scores.finalScore}/100</div>
         <br>
         <div class="level-badge">NÍVEL ${result.maturidade.level} - ${result.maturidade.name}</div>
+        <div class="action-bar">
+            <button class="btn-print" onclick="window.print()">Imprimir Relatório</button>
+            <button class="btn-save" id="saveReportBtn" onclick="saveReport()">Salvar Relatório</button>
+        </div>
     </header>
 
     <main class="container">
@@ -2598,11 +2602,6 @@ function generateHTMLReport(result, analysis, lead = null) {
             <p style="color: var(--gray);">Análise baseada em extração automática de dados públicos do site institucional${result.using_llm ? ' e geração assistida por Inteligência Artificial' : ''}. Scores${result.using_llm ? ' e recomendações' : ''} gerados${result.using_llm ? ' por LLM' : ' usando framework de 5 dimensões com pesos predefinidos'}. Para análise mais precisa, recomenda-se entrevista com stakeholders internos e acesso a dados proprietários.</p>
         </section>
     </main>
-
-    <div class="action-bar">
-        <button class="btn-print" onclick="window.print()">Imprimir Relatório</button>
-        <button class="btn-save" id="saveReportBtn" onclick="saveReport()">Salvar Relatório</button>
-    </div>
 
     <footer class="footer">
         <p><strong>Relatório de Maturidade de Inovação</strong></p>
