@@ -492,6 +492,92 @@ function generateHTMLReport(result, analysis) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatório de Maturidade de Inovação - ${result.empresa}</title>
+    <script>
+        (function () {
+            function normalizeTheme(value) {
+                if (!value) return null;
+                const normalized = String(value).trim().toLowerCase();
+                if (normalized === 'dark' || normalized === 'escuro') return 'dark';
+                if (normalized === 'light' || normalized === 'claro') return 'light';
+                return null;
+            }
+
+            function decodeBase64Url(value) {
+                try {
+                    const base = value.replace(/-/g, '+').replace(/_/g, '/');
+                    const padding = (4 - (base.length % 4 || 4)) % 4;
+                    return atob(base + '='.repeat(padding));
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            function tryParseJson(value) {
+                try {
+                    return JSON.parse(value);
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            function findThemeInObject(value, depth) {
+                if (!value || typeof value !== 'object' || depth > 4) return null;
+
+                const directTheme = normalizeTheme(value.theme || value.thema || value.mode);
+                if (directTheme) return directTheme;
+
+                for (const key in value) {
+                    if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
+                    const nested = value[key];
+                    if (nested && typeof nested === 'object') {
+                        const nestedTheme = findThemeInObject(nested, depth + 1);
+                        if (nestedTheme) return nestedTheme;
+                    }
+                }
+
+                return null;
+            }
+
+            function readThemeFromToken(rawToken) {
+                if (!rawToken) return null;
+
+                const candidates = [rawToken.trim()];
+                const tokenParts = rawToken.split('.');
+
+                if (tokenParts.length >= 2) {
+                    const jwtPayload = decodeBase64Url(tokenParts[1]);
+                    if (jwtPayload) candidates.push(jwtPayload);
+                }
+
+                const decodedToken = decodeBase64Url(rawToken);
+                if (decodedToken) candidates.push(decodedToken);
+
+                for (const candidate of candidates) {
+                    const directTheme = normalizeTheme(candidate);
+                    if (directTheme) return directTheme;
+
+                    const parsed = tryParseJson(candidate);
+                    const themed = findThemeInObject(parsed, 0);
+                    if (themed) return themed;
+                }
+
+                return null;
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const directTheme = normalizeTheme(params.get('theme') || params.get('thema') || params.get('modo'));
+            const tokenTheme = readThemeFromToken(
+                params.get('token') ||
+                params.get('access_token') ||
+                params.get('embedToken')
+            );
+            const resolvedTheme = directTheme || tokenTheme;
+
+            if (resolvedTheme) {
+                document.documentElement.setAttribute('data-theme', resolvedTheme);
+            }
+        })();
+    </script>
     <style>
         :root {
             color-scheme: light;
@@ -519,7 +605,7 @@ function generateHTMLReport(result, analysis) {
             --shadow-card: 0 20px 48px rgba(15, 23, 42, 0.1);
         }
         @media (prefers-color-scheme: dark) {
-            :root {
+            :root:not([data-theme]) {
                 color-scheme: dark;
                 --primary: #f5f5f5;
                 --secondary: #d4d4d8;
@@ -544,6 +630,31 @@ function generateHTMLReport(result, analysis) {
                 --shadow-soft: 0 32px 84px rgba(0, 0, 0, 0.42);
                 --shadow-card: 0 24px 56px rgba(0, 0, 0, 0.28);
             }
+        }
+        :root[data-theme="dark"] {
+                color-scheme: dark;
+                --primary: #f5f5f5;
+                --secondary: #d4d4d8;
+                --accent: #ff6b35;
+                --accent-strong: #ef4444;
+                --success: #3cc79d;
+                --warning: #f6b64a;
+                --danger: #ff8b78;
+                --light: #232326;
+                --dark: #0f0f10;
+                --gray: #c7c9d1;
+                --shell-bg: #171717;
+                --shell-bg-alt: #101013;
+                --surface: rgba(31, 31, 35, 0.9);
+                --surface-solid: #232326;
+                --surface-muted: rgba(36, 40, 47, 0.84);
+                --border: rgba(255, 255, 255, 0.12);
+                --border-strong: rgba(255, 107, 53, 0.28);
+                --text-primary: #f5f5f5;
+                --text-secondary: #c7c9d1;
+                --text-tertiary: #a1a1aa;
+                --shadow-soft: 0 32px 84px rgba(0, 0, 0, 0.42);
+                --shadow-card: 0 24px 56px rgba(0, 0, 0, 0.28);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
