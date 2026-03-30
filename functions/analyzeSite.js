@@ -2620,7 +2620,7 @@ function generateHTMLReport(result, analysis, lead = null) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        email: 'renanpasini@gmail.com',
+                        email: 'jessica.gomes@iebtinnovation.com',
                         reportHtml: document.documentElement.outerHTML,
                         companyName: '${result.empresa}'
                     })
