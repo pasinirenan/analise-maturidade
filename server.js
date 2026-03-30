@@ -82,7 +82,7 @@ app.get('/api/progress/:analysisId', (req, res) => {
 });
 
 app.post('/api/analyze', async (req, res) => {
-    const { url } = req.body;
+    const { url, lead } = req.body;
     
     if (!url) {
         return res.status(400).json({ error: 'URL é obrigatória' });
@@ -92,13 +92,12 @@ app.post('/api/analyze', async (req, res) => {
 
     const progress = {
         steps: {
-            1: { status: 'active', message: 'Buscando site...' },
-            2: { status: 'pending', message: 'Analisando conteudo...' },
-            3: { status: 'pending', message: 'Raspando paginas internas...' },
+            1: { status: 'active', message: 'Salvando seus dados...' },
+            2: { status: 'pending', message: 'Buscando site...' },
+            3: { status: 'pending', message: 'Analisando conteudo...' },
             4: { status: 'pending', message: 'Analisando redes sociais...' },
-            5: { status: 'pending', message: 'Classificando setor...' },
-            6: { status: 'pending', message: 'Calculando scores...' },
-            7: { status: 'pending', message: 'Gerando relatorio HTML...' }
+            5: { status: 'pending', message: 'Calculando benchmark...' },
+            6: { status: 'pending', message: 'Gerando relatorio PDF...' }
         },
         completed: false,
         currentStep: 1
@@ -118,6 +117,9 @@ app.post('/api/analyze', async (req, res) => {
         const llmConfig = getLLMConfig();
         
         console.log(`[${new Date().toLocaleTimeString()}] Análise iniciada: ${normalizedUrl}`);
+        if (lead) {
+            console.log(`[${new Date().toLocaleTimeString()}] Lead: ${lead.nome} - ${lead.empresa}`);
+        }
         if (llmConfig) {
             console.log(`[${new Date().toLocaleTimeString()}] Usando LLM: ${llmConfig.provider.toUpperCase()} (${llmConfig.model})`);
         }
@@ -126,35 +128,29 @@ app.post('/api/analyze', async (req, res) => {
             progress.steps[stepNum] = { status, message };
             progress.currentStep = stepNum;
             console.log(`[Progress] Step ${stepNum}: ${status} - ${message}`);
-            if (status === 'done' && stepNum < 7) {
+            if (status === 'done' && stepNum < 6) {
                 progress.steps[stepNum + 1] = { status: 'active', message: progress.steps[stepNum + 1]?.message || '' };
                 progress.currentStep = stepNum + 1;
             }
         };
 
-        const result = await analyzeSite(normalizedUrl, llmConfig, { updateStep });
+        const result = await analyzeSite(normalizedUrl, llmConfig, { updateStep }, lead);
 
-        updateStep(7, 'done', 'Relatorio gerado com sucesso!');
-        
-        const timestamp = Date.now();
-        const filename = `relatorio-${timestamp}.html`;
-        const filepath = path.join(reportsDir, filename);
-
-        fs.writeFileSync(filepath, result.html);
+        updateStep(6, 'done', 'Relatorio gerado com sucesso!');
         
         progress.completed = true;
         progress.result = {
             success: true,
-            filename: filename,
             url: normalizedUrl,
             scores: result.llmResult.scores,
             maturity: result.llmResult.maturidade,
             using_llm: isLLMEnabled(),
             provider: getProviderName(),
-            reportHtml: result.html
+            reportHtml: result.html,
+            lead: lead
         };
 
-        console.log(`[${new Date().toLocaleTimeString()}] Relatório gerado: ${filename}`);
+        console.log(`[${new Date().toLocaleTimeString()}] Relatório gerado`);
         console.log(`[${new Date().toLocaleTimeString()}] Score: ${result.llmResult.scores.finalScore}/100`);
 
         res.json({ 

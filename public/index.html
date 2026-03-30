@@ -18,22 +18,19 @@
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); min-height: 100vh; }
-        .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
-        .hero { text-align: center; color: white; margin-bottom: 40px; }
-        .hero h1 { font-size: 2.5rem; margin-bottom: 15px; }
-        .hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; margin: 0 auto; }
-        .card { background: white; border-radius: 16px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-        .form-group { margin-bottom: 25px; }
-        .form-group label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
-        .input-wrapper { position: relative; }
-        .input-wrapper input { width: 100%; padding: 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; }
-        .input-wrapper input:focus { outline: none; border-color: var(--accent); }
+        .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+        .hero { text-align: center; color: white; margin-bottom: 30px; }
+        .hero h1 { font-size: 2rem; margin-bottom: 15px; }
+        .hero p { font-size: 1rem; opacity: 0.9; max-width: 500px; margin: 0 auto; }
+        .card { background: white; border-radius: 16px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 6px; font-size: 0.9rem; }
+        .form-group input { width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; }
+        .form-group input:focus { outline: none; border-color: var(--accent); }
         .btn { width: 100%; padding: 16px; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, var(--accent) 0%, #e8914a 100%); color: white; }
         .btn:disabled { opacity: 0.7; cursor: not-allowed; }
-        .features { margin-top: 30px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        .feature { text-align: center; padding: 15px; background: var(--light); border-radius: 10px; }
-        .feature-icon { font-size: 1.5rem; margin-bottom: 8px; }
-        .feature-text { font-size: 0.85rem; color: var(--gray); }
+        .btn-success { background: linear-gradient(135deg, var(--success) 0%, #228b75 100%); }
         .status { margin-top: 25px; padding: 20px; border-radius: 10px; display: none; }
         .status.loading { display: block; background: rgba(42, 157, 143, 0.1); border: 1px solid var(--success); }
         .status.error { background: rgba(231, 111, 81, 0.1); border: 1px solid var(--danger); color: var(--danger); }
@@ -48,149 +45,125 @@
         .step-indicator.done .step-indicator-icon { background: var(--success); border-color: var(--success); color: white; }
         .step-indicator.done { color: var(--success); }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        .result-actions { margin-top: 20px; display: flex; gap: 10px; }
-        .btn-secondary { flex: 1; padding: 12px; background: var(--light); color: var(--primary); border: 2px solid var(--primary); border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none; text-align: center; }
+        .result-actions { margin-top: 20px; display: flex; gap: 10px; flex-direction: column; }
+        .btn-secondary { padding: 14px; background: var(--light); color: var(--primary); border: 2px solid var(--primary); border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none; text-align: center; }
         .btn-secondary:hover { background: var(--primary); color: white; }
-        .how-it-works { margin-top: 40px; color: rgba(255,255,255,0.8); }
-        .how-it-works h2 { font-size: 1.3rem; margin-bottom: 15px; text-align: center; }
-        .steps-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        .step-item { text-align: center; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 10px; }
-        .step-number { width: 35px; height: 35px; background: var(--accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin: 0 auto 10px; }
-        .step-title { font-weight: 600; margin-bottom: 5px; }
-        .step-desc { font-size: 0.85rem; opacity: 0.8; }
-        .footer { text-align: center; margin-top: 40px; color: rgba(255,255,255,0.6); font-size: 0.85rem; }
-        @media (max-width: 600px) { .hero h1 { font-size: 1.8rem; } .features, .steps-list { grid-template-columns: 1fr; } .card { padding: 25px; } .score-bars { grid-template-columns: 1fr; } }
-        .result-actions { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
-        .btn-email { background: var(--success); color: white; }
-        .btn-email:hover { background: #228b75; }
+        .footer { text-align: center; margin-top: 30px; color: rgba(255,255,255,0.6); font-size: 0.85rem; }
         .score-preview { background: white; border-radius: 10px; padding: 20px; margin-top: 15px; }
-        .score-preview h4 { color: var(--primary); margin-bottom: 15px; font-size: 1.2rem; }
-        .score-bars { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .score-preview h4 { color: var(--primary); margin-bottom: 15px; font-size: 1.1rem; }
+        .score-bars { display: grid; gap: 10px; }
         .score-bar { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
-        .score-bar-label { min-width: 100px; color: var(--gray); }
+        .score-bar-label { min-width: 120px; color: var(--gray); }
         .score-bar-fill { flex: 1; height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
         .score-bar-value { min-width: 35px; text-align: right; font-weight: 600; color: var(--primary); font-size: 0.9rem; }
+        @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } .hero h1 { font-size: 1.6rem; } .card { padding: 20px; } }
+        .email-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0; }
+        .email-section label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 8px; font-size: 0.9rem; }
+        .email-section input { width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; margin-bottom: 10px; }
+        .email-status { margin-top: 10px; padding: 10px; border-radius: 8px; text-align: center; font-size: 0.9rem; display: none; }
+        .email-status.success { background: rgba(42, 157, 143, 0.1); color: var(--success); }
+        .email-status.error { background: rgba(231, 111, 81, 0.1); color: var(--danger); }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="hero">
             <h1>Analise de Maturidade de Inovacao</h1>
-            <p>Descubra o nivel de maturidade digital e inovacao de qualquer empresa em segundos.</p>
+            <p>Descubra o nivel de maturidade digital e inovacao de qualquer empresa.</p>
         </div>
 
         <div class="card">
-            <form id="analyzeForm">
-                <div class="form-group">
-                    <label for="url">URL do Site da Empresa</label>
-                    <div class="input-wrapper">
-                        <input type="text" id="url" name="url" placeholder="www.exemplo.com.br" required autocomplete="url">
+            <form id="leadForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nome">Nome Completo</label>
+                        <input type="text" id="nome" name="nome" placeholder="Seu nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="telefone">Telefone</label>
+                        <input type="tel" id="telefone" name="telefone" placeholder="(11) 99999-9999" required>
                     </div>
                 </div>
-                <button type="submit" class="btn" id="submitBtn">Analisar Site</button>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="empresa">Empresa</label>
+                        <input type="text" id="empresa" name="empresa" placeholder="Sua empresa" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="seu@email.com" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="url">URL do Site da Empresa</label>
+                    <input type="text" id="url" name="url" placeholder="www.exemplo.com.br" required>
+                </div>
+                <button type="submit" class="btn" id="submitBtn">Gerar Relatorio</button>
             </form>
 
             <div class="status loading" id="statusLoading">
-                <h3>🔄 Analisando Site...</h3>
+                <h3>🔄 Gerando Relatorio...</h3>
                 <p id="statusMessage">Aguarde...</p>
                 <div class="spinner-steps">
-                    <div class="step-indicator pending" id="step1"><span class="step-indicator-icon">1</span><span>Buscando site</span></div>
-                    <div class="step-indicator pending" id="step2"><span class="step-indicator-icon">2</span><span>Analisando conteudo</span></div>
-                    <div class="step-indicator pending" id="step3"><span class="step-indicator-icon">3</span><span>Raspando paginas internas</span></div>
+                    <div class="step-indicator pending" id="step1"><span class="step-indicator-icon">1</span><span>Salvando seus dados</span></div>
+                    <div class="step-indicator pending" id="step2"><span class="step-indicator-icon">2</span><span>Buscando site</span></div>
+                    <div class="step-indicator pending" id="step3"><span class="step-indicator-icon">3</span><span>Analisando conteudo</span></div>
                     <div class="step-indicator pending" id="step4"><span class="step-indicator-icon">4</span><span>Analisando redes sociais</span></div>
-                    <div class="step-indicator pending" id="step5"><span class="step-indicator-icon">5</span><span>Classificando setor</span></div>
-                    <div class="step-indicator pending" id="step6"><span class="step-indicator-icon">6</span><span>Calculando scores</span></div>
-                    <div class="step-indicator pending" id="step7"><span class="step-indicator-icon">7</span><span>Gerando relatorio</span></div>
+                    <div class="step-indicator pending" id="step5"><span class="step-indicator-icon">5</span><span>Calculando benchmark</span></div>
+                    <div class="step-indicator pending" id="step6"><span class="step-indicator-icon">6</span><span>Gerando relatorio PDF</span></div>
                 </div>
             </div>
 
             <div class="status error" id="statusError">
                 <h3>❌ Erro na Analise</h3>
-                <p id="errorMessage">Verifique a URL e tente novamente.</p>
+                <p id="errorMessage">Verifique os dados e tente novamente.</p>
             </div>
 
             <div class="status success" id="statusSuccess">
-                <h3>✅ Relatorio Gerado!</h3>
-                <p>O relatorio foi criado com sucesso.</p>
+                <h3>✅ Relatorio Pronto!</h3>
+                <p>Seu relatorio foi gerado com sucesso.</p>
                 <div class="score-preview" id="scorePreview">
                     <h4>Score: <span id="finalScore">0</span>/100</h4>
                     <div class="score-bars" id="scoreBars"></div>
                 </div>
                 <div class="result-actions">
-                    <button class="btn-secondary" id="viewReport">Ver Relatorio</button>
-                    <button class="btn-secondary btn-email" id="sendEmailBtn">Enviar por Email</button>
+                    <button class="btn btn-success" id="viewReport">Baixar Relatorio PDF</button>
+                    <button class="btn-secondary" id="sendEmailBtn">Receber por Email</button>
                     <button class="btn-secondary" id="newAnalysis">Nova Analise</button>
+                </div>
+                <div id="emailSection" class="email-section" style="display:none;">
+                    <label for="emailDestinatario">Email para receber o relatorio:</label>
+                    <input type="email" id="emailDestinatario" placeholder="email@exemplo.com">
+                    <button class="btn" id="sendEmailConfirm" style="margin-top:10px;">Enviar Email</button>
+                    <div id="emailStatus" class="email-status"></div>
                 </div>
             </div>
         </div>
 
-        <div id="emailModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-            <div class="modal-content" style="background:white; padding:30px; border-radius:16px; max-width:400px; width:90%;">
-                <h3 style="color:var(--primary); margin-bottom:20px;">Enviar Relatorio por Email</h3>
-                <form id="emailForm">
-                    <div class="form-group">
-                        <label for="email">Seu Email</label>
-                        <input type="email" id="email" name="email" placeholder="seu@email.com" required style="width:100%; padding:12px; border:2px solid #e0e0e0; border-radius:8px; font-size:1rem;">
-                    </div>
-                    <div style="display:flex; gap:10px;">
-                        <button type="submit" class="btn" id="sendEmailSubmit" style="flex:1;">Enviar</button>
-                        <button type="button" id="closeModal" class="btn-secondary" style="flex:1; padding:12px;">Cancelar</button>
-                    </div>
-                </form>
-                <div id="emailStatus" style="margin-top:15px; text-align:center; display:none;"></div>
-            </div>
-        </div>
-
-        <div class="how-it-works">
-            <h2>Como Funciona</h2>
-            <div class="steps-list">
-                <div class="step-item"><div class="step-number">1</div><div class="step-title">Insira a URL</div><div class="step-desc">Digite o endereco do site da empresa</div></div>
-                <div class="step-item"><div class="step-number">2</div><div class="step-title">Analise Automatica</div><div class="step-desc">Raspamos site, redes sociais e paginas internas</div></div>
-                <div class="step-item"><div class="step-number">3</div><div class="step-title">Relatorio Completo</div><div class="step-desc">Receba analise detalhada com benchmark</div></div>
-            </div>
-        </div>
-
-        <div class="footer"><p>BMAD Skills</p></div>
+        <div class="footer"><p>IEBT Inovacao</p></div>
     </div>
 
     <script>
         const API_BASE = '';
-        const form = document.getElementById('analyzeForm');
+        const leadForm = document.getElementById('leadForm');
         const submitBtn = document.getElementById('submitBtn');
-        const urlInput = document.getElementById('url');
-        const statusLoading = document.getElementById('statusLoading');
-        const statusError = document.getElementById('statusError');
-        const statusSuccess = document.getElementById('statusSuccess');
-        const statusMessage = document.getElementById('statusMessage');
-        const errorMessage = document.getElementById('errorMessage');
-        const viewReport = document.getElementById('viewReport');
-        const newAnalysisBtn = document.getElementById('newAnalysis');
-        const scoreBars = document.getElementById('scoreBars');
-        const finalScoreEl = document.getElementById('finalScore');
-
-        const dimensionNames = {
-            presenceDigital: 'Presenca Digital',
-            socialMedia: 'Redes Sociais',
-            cultureInnovation: 'Cultura Inovacao',
-            communication: 'Comunicacao',
-            transformation: 'Transformacao'
-        };
+        
+        let leadData = {};
+        let currentReportHtml = '';
 
         function setStep(num, state) {
             const el = document.getElementById('step' + num);
-            if (el) {
-                el.className = 'step-indicator ' + state;
-            }
+            if (el) el.className = 'step-indicator ' + state;
         }
 
         function resetSteps() {
-            for (let i = 1; i <= 7; i++) setStep(i, 'pending');
+            for (let i = 1; i <= 6; i++) setStep(i, 'pending');
         }
 
         function showStatus(el) {
-            statusLoading.style.display = 'none';
-            statusError.style.display = 'none';
-            statusSuccess.style.display = 'none';
+            document.getElementById('statusLoading').style.display = 'none';
+            document.getElementById('statusError').style.display = 'none';
+            document.getElementById('statusSuccess').style.display = 'none';
             if (el) el.style.display = 'block';
         }
 
@@ -202,60 +175,45 @@
 
         function renderScoreBars(scores) {
             let html = '';
+            const dimensionNames = {
+                presenceDigital: 'Presenca Digital',
+                socialMedia: 'Redes Sociais',
+                cultureInnovation: 'Cultura Inovacao',
+                communication: 'Comunicacao',
+                transformation: 'Transformacao'
+            };
             for (const [key, value] of Object.entries(scores)) {
                 if (key === 'finalScore') continue;
                 const name = dimensionNames[key] || key;
                 html += '<div class="score-bar"><span class="score-bar-label">' + name + '</span><div class="score-bar-fill"><div style="width:' + value + '%;height:100%;background:' + getScoreColor(value) + ';border-radius:4px;"></div></div><span class="score-bar-value">' + value + '</span></div>';
             }
-            scoreBars.innerHTML = html;
-            finalScoreEl.textContent = scores.finalScore || 0;
+            document.getElementById('scoreBars').innerHTML = html;
+            document.getElementById('finalScore').textContent = scores.finalScore || 0;
         }
 
-        async function runAnalysis(url) {
+        leadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            leadData = {
+                nome: document.getElementById('nome').value.trim(),
+                telefone: document.getElementById('telefone').value.trim(),
+                empresa: document.getElementById('empresa').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                url: document.getElementById('url').value.trim()
+            };
+
             resetSteps();
-            showStatus(statusLoading);
+            showStatus(document.getElementById('statusLoading'));
             submitBtn.disabled = true;
 
-            const steps = [
-                { id: 1, msg: 'Buscando site...', delay: 800 },
-                { id: 2, msg: 'Analisando conteudo...', delay: 1200 },
-                { id: 3, msg: 'Raspando paginas internas...', delay: 1500 },
-                { id: 4, msg: 'Analisando redes sociais...', delay: 2000 },
-                { id: 5, msg: 'Classificando setor...', delay: 500 },
-                { id: 6, msg: 'Calculando scores...', delay: 800 },
-                { id: 7, msg: 'Gerando relatorio...', delay: 1000 }
-            ];
-
+            const steps = [1, 2, 3, 4, 5, 6];
             let stepIndex = 0;
 
-            const showStep = (index, state) => {
-                const el = document.getElementById('step' + steps[index].id);
-                if (el) {
-                    el.className = 'step-indicator ' + state;
-                }
-            };
-
-            const animate = () => {
-                return new Promise((resolve) => {
-                    if (stepIndex >= steps.length) {
-                        resolve();
-                        return;
-                    }
-
-                    showStep(stepIndex, 'active');
-                    statusMessage.textContent = steps[stepIndex].msg;
-
-                    setTimeout(() => {
-                        showStep(stepIndex, 'done');
-                        stepIndex++;
-                        resolve();
-                    }, steps[stepIndex].delay);
-                });
-            };
-
             const runAnimation = async () => {
-                for (let i = 0; i < steps.length; i++) {
-                    await animate();
+                for (const step of steps) {
+                    setStep(step, 'active');
+                    await new Promise(r => setTimeout(r, 800));
+                    setStep(step, 'done');
                 }
             };
 
@@ -265,7 +223,10 @@
                 const response = await fetch(API_BASE + '/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: url })
+                    body: JSON.stringify({
+                        url: leadData.url,
+                        lead: leadData
+                    })
                 });
 
                 const data = await response.json();
@@ -274,90 +235,53 @@
                     throw new Error(data.details || data.error || 'Erro na analise');
                 }
 
-                for (let i = 1; i <= 7; i++) {
-                    setStep(i, 'done');
-                }
-                statusMessage.textContent = 'Analise concluida!';
-                showStatus(statusSuccess);
-                if (data.reportHtml) {
-                    currentReportHtml = data.reportHtml;
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const urlValue = urlInput.value.trim();
-                    currentCompanyName = urlValue.replace(/https?:\/\//, '').split('/')[0];
-                }
+                for (const step of steps) setStep(step, 'done');
+                showStatus(document.getElementById('statusSuccess'));
+                currentReportHtml = data.reportHtml || '';
                 if (data.scores) renderScoreBars(data.scores);
+                document.getElementById('emailDestinatario').value = leadData.email;
 
             } catch (error) {
-                console.error('Erro completo:', error);
+                console.error('Erro:', error);
                 let msg = error.message || 'Erro desconhecido';
-                if (msg.includes('fetch') || msg.includes('network') || msg === 'Failed to fetch') {
-                    msg = 'Servidor nao esta rodando. Verifique se o servidor esta ativo (npm start).';
+                if (msg.includes('fetch') || msg.includes('network')) {
+                    msg = 'Servidor nao esta rodando.';
                 }
-                errorMessage.textContent = msg;
-                showStatus(statusError);
+                document.getElementById('errorMessage').textContent = msg;
+                showStatus(document.getElementById('statusError'));
             } finally {
                 submitBtn.disabled = false;
             }
-        }
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const url = urlInput.value.trim();
-            if (url) await runAnalysis(url);
         });
 
-        newAnalysisBtn.addEventListener('click', () => {
-            urlInput.value = '';
-            showStatus(null);
-            document.getElementById('reportFrame').style.display = 'none';
-            urlInput.focus();
-        });
-        
-        const reportFrame = document.getElementById('reportFrame');
-        viewReport.addEventListener('click', (e) => {
-            e.preventDefault();
+        document.getElementById('viewReport').addEventListener('click', () => {
             if (currentReportHtml) {
-                const reportWindow = window.open('', '_blank');
-                if (reportWindow) {
-                    reportWindow.document.write(currentReportHtml);
-                    reportWindow.document.close();
-                }
+                const win = window.open('', '_blank');
+                win.document.write(currentReportHtml);
+                win.document.close();
             }
         });
-        
-        const emailModal = document.getElementById('emailModal');
-        const emailForm = document.getElementById('emailForm');
-        const closeModalBtn = document.getElementById('closeModal');
-        const emailStatus = document.getElementById('emailStatus');
-        const sendEmailSubmit = document.getElementById('sendEmailSubmit');
-
-        let currentReportHtml = '';
-        let currentCompanyName = '';
 
         document.getElementById('sendEmailBtn').addEventListener('click', () => {
-            emailModal.style.display = 'flex';
-            emailStatus.style.display = 'none';
+            const section = document.getElementById('emailSection');
+            section.style.display = section.style.display === 'none' ? 'block' : 'none';
         });
 
-        closeModalBtn.addEventListener('click', () => {
-            emailModal.style.display = 'none';
-        });
-
-        emailModal.addEventListener('click', (e) => {
-            if (e.target === emailModal) {
-                emailModal.style.display = 'none';
+        document.getElementById('sendEmailConfirm').addEventListener('click', async () => {
+            const email = document.getElementById('emailDestinatario').value.trim();
+            const emailStatus = document.getElementById('emailStatus');
+            
+            if (!email) {
+                emailStatus.textContent = 'Digite um email valido';
+                emailStatus.className = 'email-status error';
+                emailStatus.style.display = 'block';
+                return;
             }
-        });
 
-        emailForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            
-            sendEmailSubmit.disabled = true;
-            sendEmailSubmit.textContent = 'Enviando...';
+            emailStatus.textContent = 'Enviando...';
+            emailStatus.className = 'email-status';
             emailStatus.style.display = 'block';
-            emailStatus.innerHTML = '<span style="color: var(--primary);">Enviando email...</span>';
-            
+
             try {
                 const response = await fetch(API_BASE + '/api/send-email', {
                     method: 'POST',
@@ -365,32 +289,34 @@
                     body: JSON.stringify({
                         email: email,
                         reportHtml: currentReportHtml,
-                        companyName: currentCompanyName
+                        companyName: leadData.empresa,
+                        lead: leadData
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
-                    emailStatus.innerHTML = '<span style="color: var(--success);">Email enviado com sucesso!</span>';
-                    setTimeout(() => {
-                        emailModal.style.display = 'none';
-                        emailForm.reset();
-                    }, 2000);
+                    emailStatus.textContent = 'Email enviado com sucesso!';
+                    emailStatus.className = 'email-status success';
                 } else {
-                    const errorMsg = data.details || data.error || 'Tente novamente';
-                    const errorCode = data.code ? `<br><small>Código: ${data.code}</small>` : '';
-                    emailStatus.innerHTML = `<span style="color: var(--danger);">Erro: ${errorMsg}${errorCode}</span>`;
+                    emailStatus.textContent = data.details || data.error || 'Erro ao enviar';
+                    emailStatus.className = 'email-status error';
                 }
             } catch (error) {
-                emailStatus.innerHTML = '<span style="color: var(--danger);">Erro ao enviar. Verifique as configuracoes.</span>';
+                emailStatus.textContent = 'Erro ao enviar email';
+                emailStatus.className = 'email-status error';
             }
-            
-            sendEmailSubmit.disabled = false;
-            sendEmailSubmit.textContent = 'Enviar';
         });
 
-        urlInput.focus();
+        document.getElementById('newAnalysis').addEventListener('click', () => {
+            leadForm.reset();
+            leadData = {};
+            currentReportHtml = '';
+            showStatus(null);
+            document.getElementById('emailSection').style.display = 'none';
+            document.getElementById('emailStatus').style.display = 'none';
+        });
     </script>
 </body>
 </html>

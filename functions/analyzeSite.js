@@ -2015,8 +2015,11 @@ Responda APENAS com o JSON, sem texto adicional.`;
   }
 }
 
-async function analyzeSite(url, llmConfig = null, progressCallback = null) {
+async function analyzeSite(url, llmConfig = null, progressCallback = null, lead = null) {
   console.log(`Iniciando análise de: ${url}`);
+  if (lead) {
+    console.log(`Lead: ${lead.nome} - ${lead.empresa}`);
+  }
   
   const updateStep = (step, status, message) => {
     if (progressCallback?.updateStep) {
@@ -2024,17 +2027,17 @@ async function analyzeSite(url, llmConfig = null, progressCallback = null) {
     }
   };
 
-  updateStep(1, 'done', 'Site encontrado');
+  updateStep(1, 'done', 'Dados salvos');
   
   const html = await fetchSite(url);
   const companyName = extractCompanyName(url);
   
-  updateStep(2, 'done', 'Conteúdo analisado');
+  updateStep(2, 'done', 'Site encontrado');
   
   console.log(`Analisando site de: ${companyName}`);
   const analysis = analyzeSiteContent(html, url);
   
-  updateStep(3, 'done', 'Páginas raspadas');
+  updateStep(3, 'done', 'Conteúdo analisado');
   
   console.log(`Raspando páginas internas...`);
   const internalPages = await scrapeInternalPages(url, html);
@@ -2054,7 +2057,7 @@ async function analyzeSite(url, llmConfig = null, progressCallback = null) {
   const activeSocials = socialMedia.summary?.activeProfiles || 0;
   console.log(`Redes sociais ativas encontradas: ${activeSocials}`);
   
-  updateStep(5, 'done', 'Negócio identificado');
+  updateStep(5, 'done', 'Benchmark calculado');
   
   console.log(`Analisando tipo de negócio e gerando benchmark...`);
   const businessType = identifyBusinessType(analysis);
@@ -2072,11 +2075,12 @@ async function analyzeSite(url, llmConfig = null, progressCallback = null) {
     const scores = llmResult.scores || { finalScore: 50, presenceDigital: 50, socialMedia: 50, cultureInnovation: 50, communication: 50, transformation: 50 };
     llmResult.benchmark = await generateBenchmark(analysis, scores, businessType.tipo, companyName);
     llmResult.segmento = businessType.tipo;
+    llmResult.lead = lead;
     
     return {
       analysis,
       llmResult,
-      html: generateHTMLReport(llmResult, analysis),
+      html: generateHTMLReport(llmResult, analysis, lead),
     };
   }
   
@@ -2102,6 +2106,7 @@ async function analyzeSite(url, llmConfig = null, progressCallback = null) {
     findings,
     recommendations,
     benchmark,
+    lead: lead,
     roadmap: [
       { quarter: 'Q2 2026', focus: 'Curto Prazo', deliverables: recommendations.short.slice(0, 2).join(', ') },
       { quarter: 'Q3 2026', focus: 'Médio Prazo', deliverables: recommendations.medium.slice(0, 2).join(', ') },
@@ -2116,11 +2121,11 @@ async function analyzeSite(url, llmConfig = null, progressCallback = null) {
   return {
     analysis,
     llmResult: result,
-    html: generateHTMLReport(result, analysis),
+    html: generateHTMLReport(result, analysis, lead),
   };
 }
 
-function generateHTMLReport(result, analysis) {
+function generateHTMLReport(result, analysis, lead = null) {
   const today = new Date().toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: 'long',
@@ -2206,6 +2211,12 @@ function generateHTMLReport(result, analysis) {
         .roadmap-item .focus { font-weight: 600; margin-bottom: 10px; }
         .roadmap-item .deliverables { font-size: 0.9rem; opacity: 0.9; line-height: 1.5; }
         .footer { text-align: center; padding: 30px; color: var(--gray); font-size: 0.85rem; border-top: 1px solid #eee; margin-top: 40px; }
+        .lead-info { background: linear-gradient(135deg, var(--light) 0%, white 100%); border: 2px solid var(--secondary); border-radius: 12px; padding: 25px; margin-bottom: 25px; }
+        .lead-info h3 { color: var(--primary); margin-bottom: 15px; font-size: 1.1rem; }
+        .lead-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .lead-item { background: white; padding: 12px 15px; border-radius: 8px; border-left: 3px solid var(--accent); }
+        .lead-label { font-weight: 600; color: var(--gray); font-size: 0.85rem; display: block; margin-bottom: 3px; }
+        .lead-value { color: var(--dark); font-size: 1rem; }
         .framework-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .framework-table th, .framework-table td { padding: 12px 15px; text-align: center; border: 1px solid #eee; }
         .framework-table th { background: var(--primary); color: white; }
@@ -2326,6 +2337,18 @@ function generateHTMLReport(result, analysis) {
             <p>${result.summary}</p>
             <div class="site-info"><strong>URL Analisada:</strong> ${analysis.url}</div>
         </section>
+
+        ${result.lead ? `
+        <div class="lead-info">
+            <h3>Dados do Solicitante</h3>
+            <div class="lead-grid">
+                <div class="lead-item"><span class="lead-label">Nome:</span> <span class="lead-value">${result.lead.nome || 'N/A'}</span></div>
+                <div class="lead-item"><span class="lead-label">Telefone:</span> <span class="lead-value">${result.lead.telefone || 'N/A'}</span></div>
+                <div class="lead-item"><span class="lead-label">Empresa:</span> <span class="lead-value">${result.lead.empresa || 'N/A'}</span></div>
+                <div class="lead-item"><span class="lead-label">Email:</span> <span class="lead-value">${result.lead.email || 'N/A'}</span></div>
+            </div>
+        </div>
+        ` : ''}
 
         <section class="card">
             <h2>Dados da Análise</h2>
