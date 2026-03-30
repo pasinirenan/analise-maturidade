@@ -6,22 +6,67 @@ function calculateScores(analysis) {
   if (analysis.hasCareers) presenceDigital += 10;
   if (analysis.headingsCount > 10) presenceDigital += 10;
   if (analysis.forms > 2) presenceDigital += 5;
+  
+  if (analysis.internalPages && Object.keys(analysis.internalPages).length > 0) {
+    const pages = analysis.internalPages;
+    if (pages['/sobre'] || pages['/about']) presenceDigital += 5;
+    if (pages['/contato'] || pages['/contact']) presenceDigital += 5;
+    if (pages['/servicos'] || pages['/services']) presenceDigital += 5;
+    if (pages['/carreiras'] || pages['/careers']) presenceDigital += 5;
+  }
+  
   presenceDigital = Math.min(100, presenceDigital);
 
   let socialMedia = 30;
   const activeSocials = Object.values(analysis.socialLinks).filter(Boolean).length;
   socialMedia += activeSocials * 12;
   if (analysis.hasPrivacy) socialMedia += 5;
+  
+  if (analysis.socialMedia && analysis.socialMedia.summary) {
+    const smSummary = analysis.socialMedia.summary;
+    const activeProfiles = smSummary.activeProfiles || 0;
+    socialMedia += activeProfiles * 5;
+    
+    if (smSummary.hasLinkedIn) {
+      socialMedia += 10;
+      if (analysis.socialMedia.linkedin?.followers) socialMedia += 5;
+      if (analysis.socialMedia.linkedin?.employees) socialMedia += 5;
+    }
+    if (smSummary.hasInstagram) {
+      socialMedia += 8;
+      if (analysis.socialMedia.instagram?.followers) socialMedia += 3;
+    }
+    if (smSummary.hasYouTube) {
+      socialMedia += 8;
+      if (analysis.socialMedia.youtube?.subscribers) socialMedia += 3;
+    }
+    if (smSummary.hasFacebook) socialMedia += 5;
+    if (smSummary.hasTwitter) socialMedia += 5;
+  }
+  
   socialMedia = Math.min(100, socialMedia);
 
   let cultureInnovation = 30;
   cultureInnovation += Math.min(25, Object.keys(analysis.innovationKeywords).length * 5);
+  
   if (!analysis.techIndicators.wordpress && !analysis.techIndicators.shopify && !analysis.techIndicators.wix) {
     cultureInnovation += 10;
   }
   if (analysis.techIndicators.react || analysis.techIndicators.vue || analysis.techIndicators.angular) {
     cultureInnovation += 15;
   }
+  
+  if (analysis.internalPages) {
+    let totalTechOnPages = 0;
+    let innovationOnPages = 0;
+    Object.values(analysis.internalPages).forEach(page => {
+      if (page.technologies && page.technologies.length > 0) totalTechOnPages += page.technologies.length;
+      if (page.innovationKeywords && page.innovationKeywords.length > 0) innovationOnPages += page.innovationKeywords.length;
+    });
+    cultureInnovation += Math.min(10, totalTechOnPages * 2);
+    cultureInnovation += Math.min(10, innovationOnPages * 3);
+  }
+  
   cultureInnovation = Math.min(100, cultureInnovation);
 
   let communication = 40;
@@ -29,6 +74,21 @@ function calculateScores(analysis) {
   if (analysis.wordCount > 1000) communication += 15;
   if (analysis.headingsCount > 15) communication += 10;
   if (analysis.images > 10) communication += 10;
+  
+  if (analysis.internalPages) {
+    let totalWords = analysis.wordCount;
+    let totalImages = analysis.images;
+    let hasVideos = false;
+    Object.values(analysis.internalPages).forEach(page => {
+      totalWords += page.wordCount || 0;
+      totalImages += page.images || 0;
+      if (page.videos > 0) hasVideos = true;
+    });
+    if (totalWords > 5000) communication += 10;
+    if (totalImages > 20) communication += 5;
+    if (hasVideos) communication += 5;
+  }
+  
   communication = Math.min(100, communication);
 
   let transformation = 35;
@@ -36,6 +96,27 @@ function calculateScores(analysis) {
   if (Object.keys(analysis.innovationKeywords).length > 3) transformation += 20;
   if (analysis.hasCases) transformation += 15;
   if (analysis.hasContact) transformation += 10;
+  
+  if (analysis.internalPages) {
+    const pages = analysis.internalPages;
+    let hasContactPage = pages['/contato'] || pages['/contact'];
+    let hasFormsOnPages = false;
+    let marketingTools = [];
+    
+    Object.values(pages).forEach(page => {
+      if (page.hasForm) hasFormsOnPages = true;
+      if (page.technologies) {
+        marketingTools.push(...page.technologies.filter(t => 
+          ['Google Analytics', 'Google Tag Manager', 'Facebook Pixel', 'HubSpot', 'Mailchimp', 'Hotjar'].includes(t)
+        ));
+      }
+    });
+    
+    if (hasContactPage) transformation += 5;
+    if (hasFormsOnPages) transformation += 5;
+    if (marketingTools.length > 0) transformation += 10;
+  }
+  
   transformation = Math.min(100, transformation);
 
   const finalScore = Math.round(
@@ -86,6 +167,47 @@ function getForcesAndGaps(analysis, scores) {
 
   const activeSocials = Object.values(analysis.socialLinks).filter(Boolean).length;
   if (activeSocials < 2) gaps.push('Presença limitada em redes sociais');
+  
+  if (analysis.socialMedia && analysis.socialMedia.summary) {
+    const sm = analysis.socialMedia;
+    
+    if (sm.linkedin) {
+      if (sm.linkedin.followers) {
+        forces.push(`LinkedIn com ${sm.linkedin.followers} seguidores`);
+      }
+      if (sm.linkedin.employees) {
+        forces.push(`LinkedIn indica ${sm.linkedin.employees} funcionários`);
+      }
+      if (sm.linkedin.hasAbout) {
+        forces.push('LinkedIn com seção About completa');
+      }
+    }
+    
+    if (sm.instagram) {
+      if (sm.instagram.followers) {
+        forces.push(`Instagram com ${sm.instagram.followers} seguidores`);
+      }
+    }
+    
+    if (sm.youtube) {
+      if (sm.youtube.subscribers) {
+        forces.push(`YouTube com ${sm.youtube.subscribers} inscritos`);
+      }
+      if (sm.youtube.videos) {
+        forces.push(`YouTube com ${sm.youtube.videos} vídeos`);
+      }
+    }
+    
+    if (sm.facebook && sm.facebook.likes) {
+      forces.push(`Facebook com ${sm.facebook.likes} curtidas`);
+    }
+    
+    if (sm.summary.activeProfiles >= 4) {
+      forces.push('Presença omnichannel consolidada');
+    } else if (sm.summary.activeProfiles < 2) {
+      gaps.push('Redes sociais com pouca presença');
+    }
+  }
 
   if (Object.keys(analysis.innovationKeywords).length > 0) {
     forces.push('Menções a tecnologias inovadoras');
@@ -97,6 +219,27 @@ function getForcesAndGaps(analysis, scores) {
 
   if (analysis.wordCount > 1000) forces.push('Conteúdo substancial');
   else gaps.push('Conteúdo limitado');
+  
+  if (analysis.internalPages) {
+    const pages = analysis.internalPages;
+    const pageCount = Object.keys(pages).length;
+    
+    if (pageCount >= 5) forces.push('Site com múltiplas páginas internas bem estruturadas');
+    else if (pageCount < 3) gaps.push('Site com poucas páginas internas');
+    
+    const pagesWithForms = Object.values(pages).filter(p => p.hasForm).length;
+    if (pagesWithForms >= 2) forces.push('Múltiplos formulários de captura');
+    
+    let allTech = [];
+    let allInnovation = [];
+    Object.values(pages).forEach(p => {
+      if (p.technologies) allTech.push(...p.technologies);
+      if (p.innovationKeywords) allInnovation.push(...p.innovationKeywords);
+    });
+    
+    const uniqueTech = [...new Set(allTech)];
+    if (uniqueTech.length >= 3) forces.push(`Usa múltiplas ferramentas: ${uniqueTech.slice(0, 3).join(', ')}`);
+  }
 
   return { forces: forces.slice(0, 6), gaps: gaps.slice(0, 6) };
 }
@@ -126,13 +269,51 @@ function getMainFindings(analysis, scores) {
   } else if (analysis.techIndicators.wordpress) {
     findings.push({ title: 'Tecnologia simples', description: 'Uso de WordPress pode limitar possibilidades de diferenciação digital.' });
   }
+  
+  if (analysis.internalPages) {
+    const pages = analysis.internalPages;
+    let totalTech = [];
+    Object.values(pages).forEach(p => {
+      if (p.technologies) totalTech.push(...p.technologies);
+    });
+    const uniqueTech = [...new Set(totalTech)];
+    
+    if (uniqueTech.length >= 3) {
+      findings.push({ title: 'Ecossistema digital maduro', description: `Utiliza ${uniqueTech.length} ferramentas digitais incluindo: ${uniqueTech.slice(0, 4).join(', ')}.` });
+    }
+    
+    const pagesWithContact = Object.values(pages).filter(p => p.email || p.phone || p.address);
+    if (pagesWithContact.length > 0) {
+      findings.push({ title: 'Canais de contato identificados', description: `${pagesWithContact.length} página(s) com informações de contato visíveis.` });
+    }
+  }
+  
+  if (analysis.socialMedia && analysis.socialMedia.summary) {
+    const sm = analysis.socialMedia;
+    
+    if (sm.summary.activeProfiles >= 4) {
+      findings.push({ title: 'Presença omnichannel consolidada', description: `Atuação em ${sm.summary.activeProfiles} plataformas digitais (LinkedIn, Instagram, YouTube, Facebook, Twitter).` });
+    }
+    
+    if (sm.linkedin && sm.linkedin.employees) {
+      findings.push({ title: 'Perfil corporativo identificado', description: `LinkedIn indica empresa com aproximadamente ${sm.linkedin.employees} funcionários e presença no setor de ${sm.linkedin.industry || 'não especificado'}.` });
+    }
+    
+    if (sm.youtube && sm.youtube.subscribers) {
+      findings.push({ title: 'Canal de vídeos ativo', description: `YouTube com ${sm.youtube.subscribers} inscritos e ${sm.youtube.videos || 'vários'} vídeos publicados.` });
+    }
+    
+    if (sm.instagram && sm.instagram.followers) {
+      findings.push({ title: 'Presença visual no Instagram', description: `Instagram com ${sm.instagram.followers} seguidores demonstra estratégia de conteúdo visual.` });
+    }
+  }
 
   if (Object.keys(analysis.innovationKeywords).length < 2) {
     findings.push({ title: 'Oportunidade de fortalecer messaging', description: 'Recomendável comunicar mais sobre inovações e tecnologias utilizadas.' });
   }
 
   if (findings.length < 3) {
-    findings.push({ title: 'Space para evolução digital', description: 'Há oportunidades de investimento em presença online e conteúdo.' });
+    findings.push({ title: 'Espaço para evolução digital', description: 'Há oportunidades de investimento em presença online e conteúdo.' });
     findings.push({ title: 'Recomendável estratégia de redes sociais', description: 'Expandir presença em redes pode aumentar alcance e engajamento.' });
   }
 

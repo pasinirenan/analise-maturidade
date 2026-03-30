@@ -610,103 +610,126 @@
             .card { padding: 24px; border-radius: 26px; }
             .how-it-works { padding: 24px 20px; border-radius: 24px; }
         }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); min-height: 100vh; }
+        .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+        .hero { text-align: center; color: white; margin-bottom: 30px; }
+        .hero h1 { font-size: 2rem; margin-bottom: 15px; }
+        .hero p { font-size: 1rem; opacity: 0.9; max-width: 500px; margin: 0 auto; }
+        .card { background: white; border-radius: 16px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 6px; font-size: 0.9rem; }
+        .form-group input { width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; }
+        .form-group input:focus { outline: none; border-color: var(--accent); }
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, var(--accent) 0%, #e8914a 100%); color: white; }
+        .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+        .btn-success { background: linear-gradient(135deg, var(--success) 0%, #228b75 100%); }
+        .status { margin-top: 25px; padding: 20px; border-radius: 10px; display: none; }
+        .status.loading { display: block; background: rgba(42, 157, 143, 0.1); border: 1px solid var(--success); }
+        .status.error { background: rgba(231, 111, 81, 0.1); border: 1px solid var(--danger); color: var(--danger); }
+        .status.success { background: rgba(42, 157, 143, 0.1); border: 1px solid var(--success); color: var(--success); }
+        .status h3 { margin-bottom: 10px; font-size: 1.1rem; }
+        .status p { color: var(--gray); font-size: 0.95rem; }
+        .spinner-steps { margin-top: 15px; }
+        .step-indicator { display: flex; align-items: center; gap: 10px; padding: 8px 0; color: var(--gray); font-size: 0.9rem; }
+        .step-indicator-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; border: 2px solid #ccc; background: #f5f5f5; }
+        .step-indicator.pending .step-indicator-icon { background: #f5f5f5; border-color: #ccc; color: #999; }
+        .step-indicator.active .step-indicator-icon { background: var(--accent); border-color: var(--accent); color: white; animation: pulse 1s infinite; }
+        .step-indicator.done .step-indicator-icon { background: var(--success); border-color: var(--success); color: white; }
+        .step-indicator.done { color: var(--success); }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .result-actions { margin-top: 20px; display: flex; gap: 10px; flex-direction: column; }
+        .btn-secondary { padding: 14px; background: var(--light); color: var(--primary); border: 2px solid var(--primary); border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none; text-align: center; }
+        .btn-secondary:hover { background: var(--primary); color: white; }
+        .footer { text-align: center; margin-top: 30px; color: rgba(255,255,255,0.6); font-size: 0.85rem; }
+        .score-preview { background: white; border-radius: 10px; padding: 20px; margin-top: 15px; }
+        .score-preview h4 { color: var(--primary); margin-bottom: 15px; font-size: 1.1rem; }
+        .score-bars { display: grid; gap: 10px; }
+        .score-bar { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+        .score-bar-label { min-width: 120px; color: var(--gray); }
+        .score-bar-fill { flex: 1; height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
+        .score-bar-value { min-width: 35px; text-align: right; font-weight: 600; color: var(--primary); font-size: 0.9rem; }
+        @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } .hero h1 { font-size: 1.6rem; } .card { padding: 20px; } }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="hero">
-            <div class="hero-title-row">
-                <div class="hero-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M6.5 6.5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-6l-3.5 3v-3h-1a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2Z"></path>
-                    </svg>
-                </div>
-                <h1>Analisador de <span class="hero-accent">Maturidade</span></h1>
-            </div>
-            <p>Descubra o nivel de maturidade digital e inovacao de qualquer empresa em segundos.</p>
+            <h1>Analise de Maturidade de Inovacao</h1>
+            <p>Descubra o nivel de maturidade digital e inovacao de qualquer empresa.</p>
         </div>
 
         <div class="card">
-            <form id="analyzeForm">
-                <div class="form-group">
-                    <label for="url">URL do Site da Empresa</label>
-                    <div class="input-wrapper">
-                        <input type="text" id="url" name="url" placeholder="www.exemplo.com.br" required autocomplete="url">
+            <form id="leadForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nome">Nome Completo</label>
+                        <input type="text" id="nome" name="nome" placeholder="Seu nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="telefone">Telefone</label>
+                        <input type="tel" id="telefone" name="telefone" placeholder="(11) 99999-9999" required>
                     </div>
                 </div>
-                <button type="submit" class="btn" id="submitBtn">Analisar Site</button>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="empresa">Empresa</label>
+                        <input type="text" id="empresa" name="empresa" placeholder="Sua empresa" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="seu@email.com" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="url">URL do Site da Empresa</label>
+                    <input type="text" id="url" name="url" placeholder="www.exemplo.com.br" required>
+                </div>
+                <button type="submit" class="btn" id="submitBtn">Gerar Relatorio</button>
             </form>
 
-            <div class="features">
-                <div class="feature"><div class="feature-icon">📊</div><div class="feature-text">5 Dimensoes</div></div>
-                <div class="feature"><div class="feature-icon">⚡</div><div class="feature-text">Rapido</div></div>
-                <div class="feature"><div class="feature-icon">📄</div><div class="feature-text">Relatorio HTML</div></div>
-            </div>
-
             <div class="status loading" id="statusLoading">
-                <h3>🔄 Analisando Site...</h3>
+                <h3>🔄 Gerando Relatorio...</h3>
                 <p id="statusMessage">Aguarde...</p>
                 <div class="spinner-steps">
-                    <div class="step-indicator pending" id="step1"><span class="step-indicator-icon">1</span><span>Buscando site</span></div>
-                    <div class="step-indicator pending" id="step2"><span class="step-indicator-icon">2</span><span>Extraindo dados</span></div>
-                    <div class="step-indicator pending" id="step3"><span class="step-indicator-icon">3</span><span>Calculando scores</span></div>
-                    <div class="step-indicator pending" id="step4"><span class="step-indicator-icon">4</span><span>Gerando relatorio</span></div>
+                    <div class="step-indicator pending" id="step1"><span class="step-indicator-icon">1</span><span>Salvando seus dados</span></div>
+                    <div class="step-indicator pending" id="step2"><span class="step-indicator-icon">2</span><span>Buscando site</span></div>
+                    <div class="step-indicator pending" id="step3"><span class="step-indicator-icon">3</span><span>Analisando conteudo</span></div>
+                    <div class="step-indicator pending" id="step4"><span class="step-indicator-icon">4</span><span>Analisando redes sociais</span></div>
+                    <div class="step-indicator pending" id="step5"><span class="step-indicator-icon">5</span><span>Calculando benchmark</span></div>
+                    <div class="step-indicator pending" id="step6"><span class="step-indicator-icon">6</span><span>Gerando relatorio PDF</span></div>
                 </div>
             </div>
 
             <div class="status error" id="statusError">
                 <h3>❌ Erro na Analise</h3>
-                <p id="errorMessage">Verifique a URL e tente novamente.</p>
+                <p id="errorMessage">Verifique os dados e tente novamente.</p>
             </div>
 
             <div class="status success" id="statusSuccess">
-                <h3>✅ Relatorio Gerado!</h3>
-                <p>O relatorio foi criado com sucesso.</p>
+                <h3>✅ Relatorio Pronto!</h3>
+                <p>Seu relatorio foi gerado com sucesso.</p>
                 <div class="score-preview" id="scorePreview">
                     <h4>Score: <span id="finalScore">0</span>/100</h4>
                     <div class="score-bars" id="scoreBars"></div>
                 </div>
                 <div class="result-actions">
-                    <a href="#" class="btn-secondary" id="viewReport">Ver Relatorio</a>
+                    <button class="btn btn-success" id="viewReport">Baixar Relatorio PDF</button>
                     <button class="btn-secondary" id="newAnalysis">Nova Analise</button>
                 </div>
             </div>
         </div>
 
-        <div class="how-it-works">
-            <h2>Como Funciona</h2>
-            <div class="steps-list">
-                <div class="step-item"><div class="step-number">1</div><div class="step-title">Insira a URL</div><div class="step-desc">Digite o endereco do site</div></div>
-                <div class="step-item"><div class="step-number">2</div><div class="step-title">Analise Automatica</div><div class="step-desc">Extrai e analisa dados</div></div>
-                <div class="step-item"><div class="step-number">3</div><div class="step-title">Relatorio</div><div class="step-desc">Receba insights</div></div>
-            </div>
-        </div>
-
+        <div class="footer"><p>IEBT Inovacao</p></div>
     </div>
 
     <script>
         const API_BASE = '';
-        const form = document.getElementById('analyzeForm');
+        const leadForm = document.getElementById('leadForm');
         const submitBtn = document.getElementById('submitBtn');
-        const urlInput = document.getElementById('url');
-        const statusLoading = document.getElementById('statusLoading');
-        const statusError = document.getElementById('statusError');
-        const statusSuccess = document.getElementById('statusSuccess');
-        const statusMessage = document.getElementById('statusMessage');
-        const errorMessage = document.getElementById('errorMessage');
-        const viewReport = document.getElementById('viewReport');
-        const newAnalysisBtn = document.getElementById('newAnalysis');
-        const scoreBars = document.getElementById('scoreBars');
-        const finalScoreEl = document.getElementById('finalScore');
-        const serverStatus = document.getElementById('serverStatus');
-
-        const dimensionNames = {
-            presenceDigital: 'Presenca Digital',
-            socialMedia: 'Redes Sociais',
-            cultureInnovation: 'Cultura Inovacao',
-            communication: 'Comunicacao',
-            transformation: 'Transformacao'
-        };
+        
+        let leadData = {};
+        let currentReportHtml = '';
 
         function setStep(num, state) {
             const el = document.getElementById('step' + num);
@@ -714,13 +737,13 @@
         }
 
         function resetSteps() {
-            for (let i = 1; i <= 4; i++) setStep(i, 'pending');
+            for (let i = 1; i <= 6; i++) setStep(i, 'pending');
         }
 
         function showStatus(el) {
-            statusLoading.style.display = 'none';
-            statusError.style.display = 'none';
-            statusSuccess.style.display = 'none';
+            document.getElementById('statusLoading').style.display = 'none';
+            document.getElementById('statusError').style.display = 'none';
+            document.getElementById('statusSuccess').style.display = 'none';
             if (el) el.style.display = 'block';
         }
 
@@ -732,53 +755,58 @@
 
         function renderScoreBars(scores) {
             let html = '';
+            const dimensionNames = {
+                presenceDigital: 'Presenca Digital',
+                socialMedia: 'Redes Sociais',
+                cultureInnovation: 'Cultura Inovacao',
+                communication: 'Comunicacao',
+                transformation: 'Transformacao'
+            };
             for (const [key, value] of Object.entries(scores)) {
                 if (key === 'finalScore') continue;
                 const name = dimensionNames[key] || key;
                 html += '<div class="score-bar"><span class="score-bar-label">' + name + '</span><div class="score-bar-fill"><div style="width:' + value + '%;height:100%;background:' + getScoreColor(value) + ';border-radius:4px;"></div></div><span class="score-bar-value">' + value + '</span></div>';
             }
-            scoreBars.innerHTML = html;
-            finalScoreEl.textContent = scores.finalScore || 0;
+            document.getElementById('scoreBars').innerHTML = html;
+            document.getElementById('finalScore').textContent = scores.finalScore || 0;
         }
 
-        async function checkServer() {
-            try {
-                const res = await fetch(API_BASE + '/');
-                if (res.ok) {
-                    serverStatus.textContent = 'Servidor conectado - pronto para analisar';
-                    serverStatus.className = 'server-status connected';
-                    return true;
-                }
-            } catch (e) {
-                serverStatus.textContent = 'Servidor desconectado - inicie o servidor';
-                serverStatus.className = 'server-status disconnected';
-                return false;
-            }
-        }
+        leadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            leadData = {
+                nome: document.getElementById('nome').value.trim(),
+                telefone: document.getElementById('telefone').value.trim(),
+                empresa: document.getElementById('empresa').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                url: document.getElementById('url').value.trim()
+            };
 
-        async function runAnalysis(url) {
             resetSteps();
-            showStatus(statusLoading);
+            showStatus(document.getElementById('statusLoading'));
             submitBtn.disabled = true;
 
-            const steps = [
-                { num: 1, msg: 'Conectando ao site...' },
-                { num: 2, msg: 'Extraindo dados...' },
-                { num: 3, msg: 'Calculando scores...' },
-                { num: 4, msg: 'Gerando relatorio...' }
-            ];
+            const steps = [1, 2, 3, 4, 5, 6];
+            let stepIndex = 0;
+
+            const runAnimation = async () => {
+                for (const step of steps) {
+                    setStep(step, 'active');
+                    await new Promise(r => setTimeout(r, 800));
+                    setStep(step, 'done');
+                }
+            };
+
+            runAnimation();
 
             try {
-                for (const s of steps) {
-                    setStep(s.num, 'active');
-                    statusMessage.textContent = s.msg;
-                    await new Promise(r => setTimeout(r, 400));
-                }
-
                 const response = await fetch(API_BASE + '/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: url })
+                    body: JSON.stringify({
+                        url: leadData.url,
+                        lead: leadData
+                    })
                 });
 
                 const data = await response.json();
@@ -787,41 +815,38 @@
                     throw new Error(data.details || data.error || 'Erro na analise');
                 }
 
-                for (let i = 1; i <= 4; i++) setStep(i, 'done');
-
-                showStatus(statusSuccess);
-                viewReport.href = API_BASE + '/reports/' + data.filename + window.location.search;
-
+                for (const step of steps) setStep(step, 'done');
+                showStatus(document.getElementById('statusSuccess'));
+                currentReportHtml = data.reportHtml || '';
                 if (data.scores) renderScoreBars(data.scores);
 
             } catch (error) {
-                console.error('Erro completo:', error);
+                console.error('Erro:', error);
                 let msg = error.message || 'Erro desconhecido';
-                if (msg.includes('fetch') || msg.includes('network') || msg === 'Failed to fetch') {
-                    msg = 'Servidor nao esta rodando. Verifique se o servidor esta ativo (npm start).';
+                if (msg.includes('fetch') || msg.includes('network')) {
+                    msg = 'Servidor nao esta rodando.';
                 }
-                errorMessage.textContent = msg;
-                showStatus(statusError);
+                document.getElementById('errorMessage').textContent = msg;
+                showStatus(document.getElementById('statusError'));
             } finally {
                 submitBtn.disabled = false;
             }
-        }
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const url = urlInput.value.trim();
-            if (url) await runAnalysis(url);
         });
 
-        newAnalysisBtn.addEventListener('click', () => {
-            urlInput.value = '';
+        document.getElementById('viewReport').addEventListener('click', () => {
+            if (currentReportHtml) {
+                const win = window.open('', '_blank');
+                win.document.write(currentReportHtml);
+                win.document.close();
+            }
+        });
+
+        document.getElementById('newAnalysis').addEventListener('click', () => {
+            leadForm.reset();
+            leadData = {};
+            currentReportHtml = '';
             showStatus(null);
-            urlInput.focus();
         });
-
-        checkServer();
-        setInterval(checkServer, 30000);
-        urlInput.focus();
     </script>
 </body>
 </html>
